@@ -91,12 +91,16 @@ Delete all four of these functions entirely and replace them with the code block
 
     if moneytype == 'cash' and GetResourceState('qb-inventory') ~= 'missing' and exports['qb-inventory']:IsCashAsItem() then
         if exports['qb-inventory']:AddCash(self.PlayerData.source, amount) then
+            local newCashAmount = exports['qb-inventory']:GetItemCount(self.PlayerData.source, 'cash') or 0
+            self.PlayerData.money.cash = newCashAmount
             if not self.Offline then
+                self.Functions.UpdatePlayerData()
                 if amount > 100000 then
                     TriggerEvent('qb-log:server:CreateLog', 'playermoney', 'AddMoney (as item)', 'lightgreen', '**' .. GetPlayerName(self.PlayerData.source) .. ' (citizenid: ' .. self.PlayerData.citizenid .. ' | id: ' .. self.PlayerData.source .. ')** $' .. amount .. ' (cash) added, reason: ' .. reason, true)
                 else
                     TriggerEvent('qb-log:server:CreateLog', 'playermoney', 'AddMoney (as item)', 'lightgreen', '**' .. GetPlayerName(self.PlayerData.source) .. ' (citizenid: ' .. self.PlayerData.citizenid .. ' | id: ' .. self.PlayerData.source .. ')** $' .. amount .. ' (cash) added, reason: ' .. reason)
                 end
+                TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, moneytype, amount, false)
                 TriggerClientEvent('QBCore:Client:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'add', reason)
                 TriggerEvent('QBCore:Server:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'add', reason)
             end
@@ -130,12 +134,16 @@ end
 
     if moneytype == 'cash' and GetResourceState('qb-inventory') ~= 'missing' and exports['qb-inventory']:IsCashAsItem() then
         if exports['qb-inventory']:RemoveCash(self.PlayerData.source, amount, reason) then
+            local newCashAmount = exports['qb-inventory']:GetItemCount(self.PlayerData.source, 'cash') or 0
+            self.PlayerData.money.cash = newCashAmount
             if not self.Offline then
+                self.Functions.UpdatePlayerData()
                 if amount > 100000 then
                     TriggerEvent('qb-log:server:CreateLog', 'playermoney', 'RemoveMoney (as item)', 'red', '**' .. GetPlayerName(self.PlayerData.source) .. ' (citizenid: ' .. self.PlayerData.citizenid .. ' | id: ' .. self.PlayerData.source .. ')** $' .. amount .. ' (cash) removed, reason: ' .. reason, true)
                 else
                     TriggerEvent('qb-log:server:CreateLog', 'playermoney', 'RemoveMoney (as item)', 'red', '**' .. GetPlayerName(self.PlayerData.source) .. ' (citizenid: ' .. self.PlayerData.citizenid .. ' | id: ' .. self.PlayerData.source .. ')** $' .. amount .. ' (cash) removed, reason: ' .. reason)
                 end
+                TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, moneytype, amount, true)
                 TriggerClientEvent('QBCore:Client:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'remove', reason)
                 TriggerEvent('QBCore:Server:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'remove', reason)
             end
@@ -195,9 +203,12 @@ end
             local newTotalCash = exports['qb-inventory']:GetItemCount(self.PlayerData.source, 'cash') or 0
             self.PlayerData.money.cash = newTotalCash
             if not self.Offline then
-                TriggerEvent('qb-log:server:CreateLog', 'playermoney', 'SetMoney (as item)', 'green', '**' .. GetPlayerName(self.PlayerData.source) .. ' (citizenid: ' .. self.PlayerData.citizenid .. ' | id: ' .. self.PlayerData.source .. ')** cash set to $' .. amount .. ', reason: ' .. reason)
-                TriggerClientEvent('QBCore:Client:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'set', reason)
-                TriggerEvent('QBCore:Server:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'set', reason)
+                self.Functions.UpdatePlayerData()
+                local difference = newTotalCash - (currentCash or 0)
+                TriggerEvent('qb-log:server:CreateLog', 'playermoney', 'SetMoney (as item)', 'green', '**' .. GetPlayerName(self.PlayerData.source) .. ' (citizenid: ' .. self.PlayerData.citizenid .. ' | id: ' .. self.PlayerData.source .. ')** cash set to $' .. newTotalCash .. ', reason: ' .. reason)
+                TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, moneytype, math.abs(difference), difference < 0)
+                TriggerClientEvent('QBCore:Client:OnMoneyChange', self.PlayerData.source, moneytype, newTotalCash, 'set', reason)
+                TriggerEvent('QBCore:Server:OnMoneyChange', self.PlayerData.source, moneytype, newTotalCash, 'set', reason)
                 TriggerClientEvent('qb-inventory:client:updateCash', self.PlayerData.source, newTotalCash)
             end
         end
