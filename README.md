@@ -6,8 +6,13 @@
 
 ## [QB INVENTORY REWORK] a modern, feature-rich, and optimized inventory system for the QBCore Framework.
 
-![Inventory Showcase](https://i.imgur.com/gCWzI8h.png)
-![Inventory Showcase](https://i.imgur.com/NUgPvCy.png)
+<p align="center">
+  <a href="https://github.com/anya-project/qb-inventory-rework/releases/latest"><img src="https://img.shields.io/github/v/release/anya-project/qb-inventory-rework?style=for-the-badge&color=c6f21a&labelColor=161616"/></a>
+</p>
+
+![Inventory Showcase](https://i.imgur.com/mUNGm4Q.png)
+![Inventory Showcase](https://i.imgur.com/yRcKsLX.png)
+![Inventory Showcase](https://i.imgur.com/sobJ81y.png)
 
 ---
 
