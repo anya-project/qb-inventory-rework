@@ -38,6 +38,7 @@ files {
     'html/app.js',
     'html/images/*.png',
     'html/images/*.webp',
+    'html/assets/*.webp',
     'html/lib/*.js',
     'html/lib/*.css',
     'html/lib/fonts/*.woff2',

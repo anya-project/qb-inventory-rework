@@ -1,13 +1,19 @@
 
 :root {
-  --background: #121212;
-  --surface: rgba(26, 26, 26, 0.85);
-  --surface-border: rgba(60, 60, 60, 0.5);
-  --primary: #F97316;
+  --background: #0d0d0d;
+  --surface-0: #0d0d0d;
+  --surface-1: #161616;
+  --surface-2: #1e1e1e;
+  --surface: rgba(22, 22, 22, 0.85);
+  --border: #2c2c2c;
+  --surface-border: rgba(44, 44, 44, 0.5);
+  --primary: #c6f21a;
+  --accent: #c6f21a;
 
-  --on-primary: #ffffff;
-  --text-primary: #e0e0e0;
-  --text-secondary: #a0a0a0;
+  --on-primary: #0d0d0d;
+  --text-primary: #f2f2f2;
+  --text-secondary: #a3a3a3;
+  --text-muted: #6b6b6b;
 
   --success: #34a853;
   --warning: #fbbc05;
@@ -113,10 +119,10 @@ body {
   color: var(--text-primary);
   font-size: 0.85em;
   font-weight: var(--font-weight-medium);
-  background: rgba(249, 115, 22, 0.1);
+  background: rgba(198, 242, 26, 0.1);
   padding: 4px 10px;
   border-radius: 6px;
-  border: 1px solid rgba(249, 115, 22, 0.2);
+  border: 1px solid rgba(198, 242, 26, 0.2);
 }
 
 .current-weight p {
@@ -137,9 +143,9 @@ body {
   transition: width 0.3s ease;
   background-image: linear-gradient(
     to right,
-    rgb(255, 149, 0) 0%,
-    rgb(249, 115, 22) 50%,
-    rgb(234, 88, 12) 100%
+    rgb(214, 247, 90) 0%,
+    rgb(198, 242, 26) 50%,
+    rgb(158, 194, 20) 100%
   );
   background-size: 100% 100%;
 }
@@ -176,7 +182,7 @@ body {
 
 .item-slot:hover {
   border-color: var(--primary);
-  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+  box-shadow: 0 2px 8px rgba(198, 242, 26, 0.3);
   background: rgba(30, 30, 30, 0.6);
 }
 
@@ -219,7 +225,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  box-shadow: 0 2px 4px rgba(249, 115, 22, 0.3);
+  box-shadow: 0 2px 4px rgba(198, 242, 26, 0.3);
   z-index: 3;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -246,7 +252,7 @@ body {
   font-size: 0.7em;
   font-weight: var(--font-weight-bold);
   color: var(--text-primary);
-  background: rgba(249, 115, 22, 0.95);
+  background: rgba(198, 242, 26, 0.95);
   padding: 3px 6px;
   border-radius: 6px;
   z-index: 4;
@@ -278,9 +284,9 @@ body {
   overflow: hidden;
   background-image: linear-gradient(
     to right,
-    rgb(255, 183, 77) 0%,
-    rgb(249, 115, 22) 50%,
-    rgb(234, 88, 12) 100%
+    rgb(214, 247, 90) 0%,
+    rgb(198, 242, 26) 50%,
+    rgb(158, 194, 20) 100%
   );
   z-index: 1;
 }
@@ -320,6 +326,14 @@ body {
   align-items: center;
   justify-content: center;
   gap: 15px;
+}
+
+.inventory-logo {
+  max-width: 120px;
+  max-height: 48px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
 }
 
 .blur-toggle-wrapper {
@@ -381,7 +395,7 @@ body {
 .input-wrapper {
   display: flex;
   align-items: center;
-  background: rgba(26, 26, 26, 0.9);
+  background: rgba(22, 22, 22, 0.9);
   border: 1.5px solid var(--surface-border);
   border-radius: 10px;
   padding: 10px 12px;
@@ -421,7 +435,7 @@ body {
 .context-menu {
   position: absolute;
   z-index: 1000;
-  background: rgba(26, 26, 26, 0.98);
+  background: rgba(22, 22, 22, 0.98);
   border: 1.5px solid var(--surface-border);
   border-radius: 10px;
   padding: 6px 0;
@@ -445,7 +459,7 @@ body {
 .context-menu li:hover {
   background: var(--primary);
   color: var(--on-primary);
-  box-shadow: 0 2px 6px rgba(249, 115, 22, 0.3);
+  box-shadow: 0 2px 6px rgba(198, 242, 26, 0.3);
 }
 
 .submenu {
@@ -530,7 +544,7 @@ body {
 .hotbar {
   display: flex;
   gap: 10px;
-  background: rgba(26, 26, 26, 0.95);
+  background: rgba(22, 22, 22, 0.95);
   padding: 12px;
   border: 1.5px solid var(--surface-border);
   border-radius: 12px;
@@ -670,8 +684,8 @@ body {
       45deg,
       transparent,
       transparent 10px,
-      rgba(249, 115, 22, 0.03) 10px,
-      rgba(249, 115, 22, 0.03) 20px
+      rgba(198, 242, 26, 0.03) 10px,
+      rgba(198, 242, 26, 0.03) 20px
     );
 }
 
@@ -690,7 +704,7 @@ body {
   opacity: 0.6;
   z-index: 2;
   transition: all 0.3s ease;
-  filter: drop-shadow(0 2px 8px rgba(249, 115, 22, 0.3));
+  filter: drop-shadow(0 2px 8px rgba(198, 242, 26, 0.3));
 }
 
 .drop-zone-pattern {
@@ -710,16 +724,16 @@ body {
       45deg,
       transparent,
       transparent 10px,
-      rgba(249, 115, 22, 0.08) 10px,
-      rgba(249, 115, 22, 0.08) 20px
+      rgba(198, 242, 26, 0.08) 10px,
+      rgba(198, 242, 26, 0.08) 20px
     );
-  box-shadow: 0 0 20px rgba(249, 115, 22, 0.2), inset 0 0 20px rgba(249, 115, 22, 0.1);
+  box-shadow: 0 0 20px rgba(198, 242, 26, 0.2), inset 0 0 20px rgba(198, 242, 26, 0.1);
 }
 
 .other-inventory-section:has(.drop-zone-container):hover .drop-zone-icon {
   opacity: 1;
   transform: scale(1.1) rotate(5deg);
-  filter: drop-shadow(0 4px 12px rgba(249, 115, 22, 0.5));
+  filter: drop-shadow(0 4px 12px rgba(198, 242, 26, 0.5));
 }
 
 .other-inventory-section:has(.drop-zone-container):hover .drop-zone-pattern {
@@ -779,7 +793,7 @@ body {
 .quantity-input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2);
+  box-shadow: 0 0 0 2px rgba(198, 242, 26, 0.2);
 }
 
 .give-button {
@@ -795,7 +809,7 @@ body {
 }
 
 .give-button:hover {
-  background-color: #ea580c;
+  background-color: #9ec214;
 }
 
 .item-slot-expiry {
