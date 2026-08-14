@@ -4,8 +4,8 @@
 
 ---
 
-> ⚠️ **Note:** This description is not always up to date.  
-> Many new improvements and features have been added, so the information below may not be fully accurate.  
+> ⚠️ **Note:** This description is not always up to date.
+> Many new improvements and features have been added, so the information below may not be fully accurate.
 > For the latest and most accurate updates, please join our **[Official Discord](https://discord.gg/HMMYNPEXGY)** — all recent changes and announcements are posted there.
 
 ---
@@ -30,18 +30,32 @@ QB Inventory Rework is a complete replacement for the default QBCore inventory, 
 
 ---
 
-## ✨ Core Features
+## ✨ Features
 
-- Cash as an item
-- New give system
-- Rob Player
-- Decay system for food & drinks
-- Weapon attachment panel
-- New 2-panel UI layout
-- Toggle blur effect
-- Per-player max weight override (via `metadata.maxweight`, for VIP/inventory-upgrade perks)
-- Self-hosted UI assets — no external CDN calls (fonts, icons, Vue, etc. are all bundled in `html/lib/`)
-- Code modifications for optimization & security
+### Inventory & Items
+- **New 2-panel UI layout** with a redesigned give system, drag-and-drop, and a dedicated weapon attachment panel.
+- **Decay system** — food & drink items can expire over time (`decayrate` on the item definition), so stockpiling perishables isn't free.
+- **Rob Player** — search/rob another player's inventory and cash.
+- **Toggle blur effect** on the background while the inventory is open.
+- **Stacked notifications** — multiple item-gain/loss toasts can show at once instead of one replacing the other.
+- **Nearby-player names use real character names** (`charinfo`), not the player's Rockstar/Steam name, when giving items to someone near you.
+- **Image fallback** — if an item's `.png` icon fails to load, the UI retries with a `.webp` of the same name before giving up (requires you to actually add a matching `.webp` file — see Configuration).
+
+### Money & Economy
+- **Cash as an item** — physical, robbable `cash` item instead of (or alongside) the `money.cash` account balance. Off by default; see Installation Step 2 to wire it into `qb-core`.
+
+### Vehicles
+- **Per-vehicle-model trunk/glovebox capacity** (`VehicleStorage.byModel`) with a sane class-based fallback (`VehicleStorage[class]` / `VehicleStorage.default`) covering all 22 GTA vehicle classes.
+- **Per-vehicle trunk interaction distance** (`TrunkDistances`) — useful for larger vehicles where the default 5m radius doesn't reach the trunk.
+
+### Player Weight
+- **Per-player max carry weight override** via `metadata.maxweight` — lets you grant individual players (VIP tiers, inventory upgrades, job perks, etc.) more or less carry capacity than `Config.MaxWeight`, enforced consistently on both the server (all add/remove/weight checks) and the client UI.
+- **`/setmaxweight [id] [weight]`** admin command to set or reset that override without needing a separate script (see Admin Commands below).
+
+### Technical
+- **Self-hosted UI assets** — fonts, icons, Vue, and other UI libraries are bundled in `html/lib/`, so the NUI no longer depends on external CDNs (Google Fonts, unpkg, cdnjs, etc.) at runtime.
+- **Legacy compatibility bridge** (`server/compat.lua`) — listens for the older `inventory:server:OpenInventory`, `QBCore:Server:AddItem`, `QBCore:Server:RemoveItem` events and the `QBCore:Server:HasItem` callback, and routes them to this inventory's exports. This exists purely for interop with third-party scripts that still use those older, event-based APIs instead of exports — if nothing in your server uses those events, it simply sits idle.
+- Code modifications for optimization & security.
 
 ---
 
@@ -69,196 +83,13 @@ Follow these steps **very carefully** to ensure a smooth installation.
 
 **🚨 IMPORTANT: Always create a backup of any file you are about to edit!**
 
-You need to edit the `qb-core/server/player.lua` file to integrate the money-as-an-item system.
+You need to edit the `qb-core/server/player.lua` file to integrate the money-as-an-item system. This only enables the money side of it — `Config.CashAsItem` in `config/config.lua` must also be set to `true`, or none of this branch ever runs (see Configuration).
 
-> ⚠️ **Before you copy-paste anything below**: not every `qb-core` build is structured the same way. Open `qb-core/server/player.lua` and check how `AddMoney` / `RemoveMoney` / `SetMoney` / `GetMoney` are actually defined:
+> This guide assumes your `qb-core` defines these as class methods with colon syntax — `function Player:AddMoney(moneytype, amount, reason)` — which is how the current `qbcore-framework/qb-core` is structured. If your fork instead assigns them inside `Player.new(...)` as `self.Functions.AddMoney = function(...) ... end`, the snippets below won't wire up correctly as-is; ask in our [Discord](https://discord.gg/HMMYNPEXGY) for help adapting them.
 >
-> - **Vanilla-style** — assigned inside `Player.new(...)` as `self.Functions.AddMoney = function(...) ... end`. Use **Variant A** below.
-> - **Class-style** — defined outside as standalone methods with colon syntax: `function Player:AddMoney(moneytype, amount, reason)`, and `self.Functions.AddMoney` is auto-generated later by wrapping the class method. Use **Variant B** below.
->
-> Picking the wrong variant will either fail to compile or silently never trigger (because your `qb-core` never calls the function you edited). If you're not sure, search the file for the literal string `self.Functions.AddMoney = function` — if it's there, you're vanilla-style; if instead you find `function Player:AddMoney`, you're class-style.
-> Also: if your `qb-core` fork has extra custom logic in these functions (VIP perks, custom logging, etc.), don't blindly delete-and-replace — merge the cash-as-item branch in on top of your existing code instead, the way it's done in the two variants below.
+> If your `qb-core` fork has extra custom logic in these functions (VIP perks, custom logging, etc.), don't blindly delete-and-replace the whole function — merge the cash-as-item branch in on top of your existing code, the way it's done below.
 
-#### A. Replace Money Management Functions
-
-##### Variant A — Vanilla-style (`self.Functions.X = function...`)
-
-Open `qb-core/server/player.lua` and find the following functions:
-
-- `self.Functions.AddMoney`
-- `self.Functions.RemoveMoney`
-- `self.Functions.SetMoney`
-- `self.Functions.GetMoney`
-
-Delete all four of these functions entirely and replace them with the code block below:
-
-```lua
---------------------------EDITED BY APCODE START--------------------------
-    function self.Functions.AddMoney(moneytype, amount, reason)
-    reason = reason or 'unknown'
-    moneytype = moneytype:lower()
-    amount = tonumber(amount)
-    if amount < 0 then return end
-    if not self.PlayerData.money[moneytype] then return false end
-
-    if moneytype == 'cash' and GetResourceState('qb-inventory') ~= 'missing' and exports['qb-inventory']:IsCashAsItem() then
-        if exports['qb-inventory']:AddCash(self.PlayerData.source, amount) then
-            local newCashAmount = exports['qb-inventory']:GetItemCount(self.PlayerData.source, 'cash') or 0
-            self.PlayerData.money.cash = newCashAmount
-            if not self.Offline then
-                self.Functions.UpdatePlayerData()
-                if amount > 100000 then
-                    TriggerEvent('qb-log:server:CreateLog', 'playermoney', 'AddMoney (as item)', 'lightgreen', '**' .. GetPlayerName(self.PlayerData.source) .. ' (citizenid: ' .. self.PlayerData.citizenid .. ' | id: ' .. self.PlayerData.source .. ')** $' .. amount .. ' (cash) added, reason: ' .. reason, true)
-                else
-                    TriggerEvent('qb-log:server:CreateLog', 'playermoney', 'AddMoney (as item)', 'lightgreen', '**' .. GetPlayerName(self.PlayerData.source) .. ' (citizenid: ' .. self.PlayerData.citizenid .. ' | id: ' .. self.PlayerData.source .. ')** $' .. amount .. ' (cash) added, reason: ' .. reason)
-                end
-                TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, moneytype, amount, false)
-                TriggerClientEvent('QBCore:Client:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'add', reason)
-                TriggerEvent('QBCore:Server:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'add', reason)
-            end
-            return true
-        else
-            return false
-        end
-    end
-
-    self.PlayerData.money[moneytype] = self.PlayerData.money[moneytype] + amount
-    if not self.Offline then
-        self.Functions.UpdatePlayerData()
-        if amount > 100000 then
-            TriggerEvent('qb-log:server:CreateLog', 'playermoney', 'AddMoney', 'lightgreen', '**' .. GetPlayerName(self.PlayerData.source) .. ' (citizenid: ' .. self.PlayerData.citizenid .. ' | id: ' .. self.PlayerData.source .. ')** $' .. amount .. ' (' .. moneytype .. ') added, new ' .. moneytype .. ' balance: ' .. self.PlayerData.money[moneytype] .. ' reason: ' .. reason, true)
-        else
-            TriggerEvent('qb-log:server:CreateLog', 'playermoney', 'AddMoney', 'lightgreen', '**' .. GetPlayerName(self.PlayerData.source) .. ' (citizenid: ' .. self.PlayerData.citizenid .. ' | id: ' .. self.PlayerData.source .. ')** $' .. amount .. ' (' .. moneytype .. ') added, new ' .. moneytype .. ' balance: ' .. self.PlayerData.money[moneytype] .. ' reason: ' .. reason)
-        end
-        TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, moneytype, amount, false)
-        TriggerClientEvent('QBCore:Client:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'add', reason)
-        TriggerEvent('QBCore:Server:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'add', reason)
-    end
-    return true
-end
-
-    function self.Functions.RemoveMoney(moneytype, amount, reason)
-    reason = reason or 'unknown'
-    moneytype = moneytype:lower()
-    amount = tonumber(amount)
-    if amount < 0 then return end
-    if not self.PlayerData.money[moneytype] then return false end
-
-    if moneytype == 'cash' and GetResourceState('qb-inventory') ~= 'missing' and exports['qb-inventory']:IsCashAsItem() then
-        if exports['qb-inventory']:RemoveCash(self.PlayerData.source, amount, reason) then
-            local newCashAmount = exports['qb-inventory']:GetItemCount(self.PlayerData.source, 'cash') or 0
-            self.PlayerData.money.cash = newCashAmount
-            if not self.Offline then
-                self.Functions.UpdatePlayerData()
-                if amount > 100000 then
-                    TriggerEvent('qb-log:server:CreateLog', 'playermoney', 'RemoveMoney (as item)', 'red', '**' .. GetPlayerName(self.PlayerData.source) .. ' (citizenid: ' .. self.PlayerData.citizenid .. ' | id: ' .. self.PlayerData.source .. ')** $' .. amount .. ' (cash) removed, reason: ' .. reason, true)
-                else
-                    TriggerEvent('qb-log:server:CreateLog', 'playermoney', 'RemoveMoney (as item)', 'red', '**' .. GetPlayerName(self.PlayerData.source) .. ' (citizenid: ' .. self.PlayerData.citizenid .. ' | id: ' .. self.PlayerData.source .. ')** $' .. amount .. ' (cash) removed, reason: ' .. reason)
-                end
-                TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, moneytype, amount, true)
-                TriggerClientEvent('QBCore:Client:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'remove', reason)
-                TriggerEvent('QBCore:Server:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'remove', reason)
-            end
-            return true
-        else
-            return false
-        end
-    end
-
-    for _, mtype in pairs(QBCore.Config.Money.DontAllowMinus) do
-        if mtype == moneytype then
-            if (self.PlayerData.money[moneytype] - amount) < 0 then
-                return false
-            end
-        end
-    end
-    if self.PlayerData.money[moneytype] - amount < QBCore.Config.Money.MinusLimit then
-        return false
-    end
-    self.PlayerData.money[moneytype] = self.PlayerData.money[moneytype] - amount
-    if not self.Offline then
-        self.Functions.UpdatePlayerData()
-        if amount > 100000 then
-            TriggerEvent('qb-log:server:CreateLog', 'playermoney', 'RemoveMoney', 'red', '**' .. GetPlayerName(self.PlayerData.source) .. ' (citizenid: ' .. self.PlayerData.citizenid .. ' | id: ' .. self.PlayerData.source .. ')** $' .. amount .. ' (' .. moneytype .. ') removed, new ' .. moneytype .. ' balance: ' .. self.PlayerData.money[moneytype] .. ' reason: ' .. reason, true)
-        else
-            TriggerEvent('qb-log:server:CreateLog', 'playermoney', 'RemoveMoney', 'red', '**' .. GetPlayerName(self.PlayerData.source) .. ' (citizenid: ' .. self.PlayerData.citizenid .. ' | id: ' .. self.PlayerData.source .. ')** $' .. amount .. ' (' .. moneytype .. ') removed, new ' .. moneytype .. ' balance: ' .. self.PlayerData.money[moneytype] .. ' reason: ' .. reason)
-        end
-        TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, moneytype, amount, true)
-        if moneytype == 'bank' then
-            TriggerClientEvent('qb-phone:client:RemoveBankMoney', self.PlayerData.source, amount)
-        end
-        TriggerClientEvent('QBCore:Client:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'remove', reason)
-        TriggerEvent('QBCore:Server:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'remove', reason)
-    end
-    return true
-end
-
-    function self.Functions.SetMoney(moneytype, amount, reason)
-    reason = reason or 'unknown'
-    moneytype = moneytype:lower()
-    amount = tonumber(amount)
-    if amount < 0 then return false end
-    if not self.PlayerData.money[moneytype] then return false end
-
-    if moneytype == 'cash' and GetResourceState('qb-inventory') ~= 'missing' and exports['qb-inventory']:IsCashAsItem() then
-        local currentCash = exports['qb-inventory']:GetItemCount(self.PlayerData.source, 'cash') or 0
-        local difference = amount - currentCash
-        local success = false
-        if difference > 0 then
-            success = exports['qb-inventory']:AddItem(self.PlayerData.source, 'cash', difference, nil, {}, 'setmoney_command')
-        elseif difference < 0 then
-            success = exports['qb-inventory']:RemoveItem(self.PlayerData.source, 'cash', math.abs(difference), nil, 'setmoney_command')
-        else
-            success = true
-        end
-        if success then
-            local newTotalCash = exports['qb-inventory']:GetItemCount(self.PlayerData.source, 'cash') or 0
-            self.PlayerData.money.cash = newTotalCash
-            if not self.Offline then
-                self.Functions.UpdatePlayerData()
-                local difference = newTotalCash - (currentCash or 0)
-                TriggerEvent('qb-log:server:CreateLog', 'playermoney', 'SetMoney (as item)', 'green', '**' .. GetPlayerName(self.PlayerData.source) .. ' (citizenid: ' .. self.PlayerData.citizenid .. ' | id: ' .. self.PlayerData.source .. ')** cash set to $' .. newTotalCash .. ', reason: ' .. reason)
-                TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, moneytype, math.abs(difference), difference < 0)
-                TriggerClientEvent('QBCore:Client:OnMoneyChange', self.PlayerData.source, moneytype, newTotalCash, 'set', reason)
-                TriggerEvent('QBCore:Server:OnMoneyChange', self.PlayerData.source, moneytype, newTotalCash, 'set', reason)
-                TriggerClientEvent('qb-inventory:client:updateCash', self.PlayerData.source, newTotalCash)
-            end
-        end
-        return success
-    end
-
-    local difference = amount - self.PlayerData.money[moneytype]
-    self.PlayerData.money[moneytype] = amount
-    if not self.Offline then
-        self.Functions.UpdatePlayerData()
-        TriggerEvent('qb-log:server:CreateLog', 'playermoney', 'SetMoney', 'green', '**' .. GetPlayerName(self.PlayerData.source) .. ' (citizenid: ' .. self.PlayerData.citizenid .. ' | id: ' .. self.PlayerData.source .. ')** $' .. amount .. ' (' .. moneytype .. ') set, new ' .. moneytype .. ' balance: ' .. self.PlayerData.money[moneytype] .. ' reason: ' .. reason)
-        TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, moneytype, math.abs(difference), difference < 0)
-        TriggerClientEvent('QBCore:Client:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'set', reason)
-        TriggerEvent('QBCore:Server:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'set', reason)
-    end
-    return true
-end
-
-    function self.Functions.GetMoney(moneytype)
-    if not moneytype then return false end
-    moneytype = moneytype:lower()
-
-    if moneytype == 'cash' and GetResourceState('qb-inventory') ~= 'missing' and exports['qb-inventory']:IsCashAsItem() then
-        local cashCount = exports['qb-inventory']:GetItemCount(self.PlayerData.source, 'cash') or 0
-        if self.PlayerData.money.cash ~= cashCount then
-            self.PlayerData.money.cash = cashCount
-        end
-        return cashCount
-    end
-
-    return self.PlayerData.money[moneytype]
-end
------------------------------EDITED BY APCODE END--------------------------
-```
-
-##### Variant B — Class-style (`function Player:AddMoney(...)`)
-
-Some `qb-core` forks define these as real methods on a `Player` class/metatable (colon syntax), with `self.Functions.AddMoney` etc. auto-generated later by wrapping the class method. If that's what you found in the check above, edit the class methods directly instead — do **not** touch `self.Functions` for this variant.
+#### A. Add the Cash-as-Item Branch to the Money Functions
 
 Find `function Player:AddMoney(moneytype, amount, reason)` and insert the cash-as-item branch right after the existing `nil`/negative-amount guard clauses (before the function does its normal balance math). Do the same for `RemoveMoney`, `SetMoney`, and `GetMoney`:
 
@@ -382,6 +213,8 @@ This ensures the player's inventory — and their synced cash balance — is loa
 
 ### Step 3: Add Cash Item to `qb-core/shared/items.lua`
 
+Only needed if you're enabling cash-as-item (Step 2 + `Config.CashAsItem = true`).
+
 ```lua
 ['cash'] = {
     name = 'cash',
@@ -399,7 +232,7 @@ This ensures the player's inventory — and their synced cash balance — is loa
 ### Step 4: Add Decay Rate to Food and Drinks
 
 To make food and drinks perishable, you need to add a decay rate to them.
-Open qb-core/shared/items.lua and for every food and drink item, add the following line inside its definition:
+Open `qb-core/shared/items.lua` and for every food and drink item, add the following line inside its definition:
 
 `decayrate = 86400.0`
 
@@ -426,13 +259,24 @@ If you encounter any issues, require assistance, or wish to suggest new features
 
 ## ⚙️ Configuration
 
-All major configuration options can be found in the `config.lua` file. You can adjust:
+All major configuration options can be found in `config/config.lua` and `config/vehicles.lua`. You can adjust:
 
-- The default keybind to open the inventory.
-- Maximum weight and slot counts.
-- Storage sizes for trunks, gloveboxes, and drops.
+- `CashAsItem` / `CustomHUD` — toggle cash-as-item mode (requires Step 2 & 3 above) and an optional third-party HUD integration.
+- Default keybind to open the inventory, and hotbar keybind.
+- Maximum weight and slot counts (`Config.MaxWeight` / `Config.MaxSlots`) — the default for all players; override per-player via `metadata.maxweight` (see Admin Commands).
+- Storage sizes for stashes and drops (`Config.StashSize` / `Config.DropSize`).
+- `VehicleStorage` in `config/vehicles.lua` — trunk/glovebox slots & weight per vehicle model or class, plus `TrunkDistances` for per-vehicle interaction range.
 - Items sold in Vending Machines.
-- And much more.
+- To use the `.webp` image fallback, drop a same-named `.webp` file next to the item's `.png` in `html/images/` — no code changes needed.
+
+## 🛡️ Admin Commands
+
+| Command | Permission | Description |
+|---|---|---|
+| `/giveitem [id] [item] [amount]` | admin | Spawn an item into a player's inventory. |
+| `/clearinv [id]` | admin | Clear a player's inventory (or your own if `id` is omitted). |
+| `/setmaxweight [id] [weight]` | admin | Set a player's custom max carry weight in grams, or omit the weight (or pass `reset`) to clear the override and fall back to `Config.MaxWeight`. |
+| `/randomitems` | god | Give the caller 10 random non-weapon items — useful for testing. |
 
 ---
 

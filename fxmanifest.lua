@@ -6,7 +6,7 @@ lua54 'yes'
 
 author 'APCode'
 description 'QB Inventory Rework by APCode'
-version '2.4.4'
+version '2.5.0'
 
 shared_scripts {
     '@qb-core/shared/locale.lua',
