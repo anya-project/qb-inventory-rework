@@ -4,6 +4,10 @@ local function IsBackEngine(vehModel)
     return BackEngineVehicles[vehModel]
 end
 
+local function GetTrunkDistance(vehModel)
+    return TrunkDistances[vehModel] or 5.0
+end
+
 local function OpenTrunk(vehicle)
     LoadAnimDict('amb@prop_human_bum_bin@idle_b')
     TaskPlayAnim(PlayerPedId(), 'amb@prop_human_bum_bin@idle_b', 'idle_d', 4.0, 4.0, -1, 50, 0, false, false, false)
@@ -16,7 +20,7 @@ end
 
 function CloseTrunk()
     local vehicle, distance = QBCore.Functions.GetClosestVehicle()
-    if vehicle == 0 or distance > 5 then return end
+    if vehicle == 0 or distance > (GetTrunkDistance(GetEntityModel(vehicle))) then return end
     LoadAnimDict('amb@prop_human_bum_bin@idle_b')
     TaskPlayAnim(PlayerPedId(), 'amb@prop_human_bum_bin@idle_b', 'exit', 4.0, 4.0, -1, 50, 0, false, false, false)
     if IsBackEngine(GetEntityModel(vehicle)) then
@@ -44,7 +48,7 @@ QBCore.Functions.CreateClientCallback('qb-inventory:client:vehicleCheck', functi
 
     -- Trunk
     local vehicle, distance = QBCore.Functions.GetClosestVehicle()
-    if vehicle ~= 0 and distance < 5 then
+    if vehicle ~= 0 and distance < (GetTrunkDistance(GetEntityModel(vehicle))) then
         local pos = GetEntityCoords(ped)
         local dimensionMin, dimensionMax = GetModelDimensions(GetEntityModel(vehicle))
         local trunkpos = GetOffsetFromEntityInWorldCoords(vehicle, 0.0, (dimensionMin.y), 0.0)

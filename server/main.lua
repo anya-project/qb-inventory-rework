@@ -388,6 +388,22 @@ RegisterNetEvent('qb-inventory:server:snowball', function(action)
     end
 end)
 
+QBCore.Functions.CreateCallback('qb-inventory:server:getNearbyPlayerNames',
+                                function(source, cb, serverIds)
+    local players = {}
+    for _, sId in ipairs(serverIds) do
+        local target = QBCore.Functions.GetPlayer(sId)
+        if target and target.PlayerData and target.PlayerData.charinfo then
+            local ci = target.PlayerData.charinfo
+            local charName = (ci.firstname or '') .. ' ' .. (ci.lastname or '')
+            table.insert(players, { id = sId, name = charName })
+        else
+            table.insert(players, { id = sId, name = 'Unknown' })
+        end
+    end
+    cb(players)
+end)
+
 QBCore.Functions.CreateCallback('qb-inventory:server:GetCurrentDrops',
                                 function(_, cb) cb(Drops) end)
 
@@ -674,8 +690,10 @@ QBCore.Functions.CreateCallback('qb-inventory:server:giveItem',
 
             cb(true)
         else
-            AddItem(source, item, amount, slot, info,
-                    'Failed to give item, returned.')
+            if not AddItem(source, item, amount, slot, info,
+                           'Failed to give item, returned.') then
+                print(('[qb-inventory] CRITICAL: item lost during give-item rollback (%s x%d, source %s -> target %s)'):format(item, amount, source, targetId))
+            end
             cb(false)
         end
     else

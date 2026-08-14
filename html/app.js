@@ -58,11 +58,7 @@ const InventoryContainer = Vue.createApp({
         showSubmenu: false,
         showHotbar: false,
         hotbarItems: [],
-        showNotification: false,
-        notificationText: "",
-        notificationImage: "",
-        notificationType: "added",
-        notificationAmount: 1,
+        notifications: [],
         showRequiredItems: false,
         requiredItems: [],
         selectedWeapon: null,
@@ -75,7 +71,6 @@ const InventoryContainer = Vue.createApp({
         ghostElement: null,
         dragStartInventoryType: "player",
         transferAmount: null,
-        notificationTimeout: null,
         showGiveSubmenu: false,
         showSubmenu: false,
         nearbyPlayers: [],
@@ -928,9 +923,11 @@ const InventoryContainer = Vue.createApp({
         );
 
         if (response.data) {
-          this.playerInventory[item.slot].amount -= amountToGive;
-          if (this.playerInventory[item.slot].amount <= 0) {
-            delete this.playerInventory[item.slot];
+          if (this.playerInventory[item.slot]) {
+            this.playerInventory[item.slot].amount -= amountToGive;
+            if (this.playerInventory[item.slot].amount <= 0) {
+              delete this.playerInventory[item.slot];
+            }
           }
         }
       } catch (error) {
@@ -1001,8 +998,7 @@ const InventoryContainer = Vue.createApp({
       const item = data.item;
       const type = data.type;
       const amount = data.amount || 1;
-      this.notificationText = item.label || "Unknown Item";
-      this.notificationImage = item.image ? `images/${item.image}` : null;
+      const id = Date.now() + Math.random();
 
       let titleText = "";
       switch (type) {
@@ -1018,13 +1014,18 @@ const InventoryContainer = Vue.createApp({
         default:
           titleText = "INFO";
       }
-      this.notificationType = `${titleText} x${amount}`;
-      if (this.notificationTimeout) {
-        clearTimeout(this.notificationTimeout);
-      }
-      this.showNotification = true;
-      this.notificationTimeout = setTimeout(() => {
-        this.showNotification = false;
+
+      const newNotification = {
+        id: id,
+        text: item.label || "Unknown Item",
+        image: item.image || null,
+        type: `${titleText} x${amount}`,
+      };
+
+      this.notifications.push(newNotification);
+
+      setTimeout(() => {
+        this.notifications = this.notifications.filter((n) => n.id !== id);
       }, 3000);
     },
     showRequiredItem(data) {
@@ -1381,6 +1382,15 @@ const InventoryContainer = Vue.createApp({
           enabled: this.isBlurEnabled,
         })
         .catch((err) => console.error("Failed to toggle blur", err));
+    },
+    imgPath(image) {
+      if (!image) return '';
+      return 'images/' + image;
+    },
+    handleImageError(event) {
+      if (event.target.src && event.target.src.endsWith('.png')) {
+        event.target.src = event.target.src.replace(/\.png$/, '.webp');
+      }
     },
   },
   mounted() {

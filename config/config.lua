@@ -5,9 +5,9 @@ Config = {
 
     CashAsItem = false,
 
-    CustomHUD = { 
+    CustomHUD = {
         Enabled = false, -- set to true to hide HUD when Inventory is open
-        ResourceName = '', 
+        ResourceName = '',
         ExportName = ''
     },
 

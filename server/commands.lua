@@ -101,6 +101,49 @@ QBCore.Commands.Add('clearinv', 'Clear Inventory (Admin Only)', { { name = 'id',
     ClearInventory(id)
 end, 'admin')
 
+local MAX_ALLOWED_CUSTOM_WEIGHT = 10000000 -- sanity ceiling for /setmaxweight, raise if your server genuinely needs more
+
+QBCore.Commands.Add('setmaxweight', 'Set or reset a player\'s custom max carry weight (Admin Only)', {
+    { name = 'id', help = 'Player ID' },
+    { name = 'weight', help = 'Max weight in grams, e.g. 150000. Omit or use "reset" to clear the override' },
+}, false, function(source, args)
+    local id = tonumber(args[1])
+    if not id then
+        QBCore.Functions.Notify(source, 'Invalid player ID', 'error')
+        return
+    end
+
+    local target = QBCore.Functions.GetPlayer(id)
+    if not target then
+        QBCore.Functions.Notify(source, Lang:t('notify.pdne'), 'error')
+        return
+    end
+
+    local rawWeight = args[2] and tostring(args[2]):lower() or 'reset'
+
+    if rawWeight == 'reset' then
+        target.Functions.SetMetaData('maxweight', nil)
+        QBCore.Functions.Notify(source, ('Max weight override for %s reset to default (%d).'):format(GetPlayerName(id), Config.MaxWeight), 'success')
+        QBCore.Functions.Notify(id, 'Your max carry weight was reset to default.', 'primary')
+        return
+    end
+
+    local weight = tonumber(rawWeight)
+    if not weight or weight ~= math.floor(weight) or weight <= 0 then
+        QBCore.Functions.Notify(source, 'Weight must be a positive whole number in grams, or "reset".', 'error')
+        return
+    end
+
+    if weight > MAX_ALLOWED_CUSTOM_WEIGHT then
+        QBCore.Functions.Notify(source, ('Weight too high, max allowed is %d.'):format(MAX_ALLOWED_CUSTOM_WEIGHT), 'error')
+        return
+    end
+
+    target.Functions.SetMetaData('maxweight', weight)
+    QBCore.Functions.Notify(source, ('Max weight for %s set to %d.'):format(GetPlayerName(id), weight), 'success')
+    QBCore.Functions.Notify(id, ('Your max carry weight was set to %d.'):format(weight), 'primary')
+end, 'admin')
+
 -- Keybindings
 
 RegisterCommand('closeInv', function(source)
@@ -133,10 +176,10 @@ RegisterCommand('inventory', function(source)
         if inventory:find('trunk-') then
             local slots = (VehicleStorage.byModel[model] and VehicleStorage.byModel[model].trunkSlots) or
                         (VehicleStorage[class] and VehicleStorage[class].trunkSlots) or
-                        VehicleStorage.default.slots
+                        VehicleStorage.default.trunkSlots
             local maxweight = (VehicleStorage.byModel[model] and VehicleStorage.byModel[model].trunkWeight) or
                               (VehicleStorage[class] and VehicleStorage[class].trunkWeight) or
-                              VehicleStorage.default.maxWeight
+                              VehicleStorage.default.trunkWeight
 
             OpenInventory(source, inventory, {
                 slots = slots,
@@ -146,10 +189,10 @@ RegisterCommand('inventory', function(source)
         elseif inventory:find('glovebox-') then
             local slots = (VehicleStorage.byModel[model] and VehicleStorage.byModel[model].gloveboxSlots) or
                         (VehicleStorage[class] and VehicleStorage[class].gloveboxSlots) or
-                        VehicleStorage.default.slots
+                        VehicleStorage.default.gloveboxSlots
             local maxweight = (VehicleStorage.byModel[model] and VehicleStorage.byModel[model].gloveboxWeight) or
                               (VehicleStorage[class] and VehicleStorage[class].gloveboxWeight) or
-                              VehicleStorage.default.maxWeight
+                              VehicleStorage.default.gloveboxWeight
             OpenInventory(source, inventory, {
                 slots = slots,
                 maxweight = maxweight

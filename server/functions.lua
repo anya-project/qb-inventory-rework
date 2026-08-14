@@ -2,6 +2,16 @@
 -- server/functions.lua
 ---------------------------
 
+-- HELPER: Get dynamic max weight for a player (supports VIP inventory upgrades)
+-- Reads from player metadata 'maxweight' first, falls back to Config.MaxWeight
+local function GetPlayerMaxWeight(Player)
+    local mw = Player and Player.PlayerData and Player.PlayerData.metadata and Player.PlayerData.metadata['maxweight']
+    if type(mw) == 'number' and mw > 0 then
+        return mw
+    end
+    return Config.MaxWeight
+end
+
 local function InitializeInventory(inventoryId, data)
     Inventories[inventoryId] = {
         items = {},
@@ -61,6 +71,10 @@ function LoadInventory(source, citizenid)
 
     for _, item in pairs(inventory) do
         if item then
+            if not QBCore.Shared or not QBCore.Shared.Items then
+                print('^1[qb-inventory] CRITICAL ERROR: QBCore.Shared.Items is missing! Check syntax in qb-core/shared/items.lua^7')
+                return loadedInventory
+            end
             local itemInfo = QBCore.Shared.Items[item.name:lower()]
 
             if itemInfo then
@@ -94,7 +108,7 @@ end
 exports('LoadInventory', LoadInventory)
 
 function SaveInventory(source, offline)
-    print(('[qb-inventory] Save Inventory data for: %s (%s)'):format(GetPlayerName(source), source))
+    -- print(('[qb-inventory] Save Inventory data for: %s (%s)'):format(GetPlayerName(source), source))
     local PlayerData
     if offline then
         PlayerData = source
@@ -338,7 +352,7 @@ function CanAddItem(identifier, item, amount)
 
     local inventory, items
      if Player then
-        inventory = { maxweight = Config.MaxWeight, slots = Config.MaxSlots }
+        inventory = { maxweight = GetPlayerMaxWeight(Player), slots = Config.MaxSlots }
         items = Player.PlayerData.items
     elseif Inventories[identifier] then
         inventory = Inventories[identifier]
@@ -379,7 +393,7 @@ function GetFreeWeight(source)
     if not Player then return 0 end
 
     local totalWeight = GetTotalWeight(Player.PlayerData.items)
-    return Config.MaxWeight - totalWeight
+    return GetPlayerMaxWeight(Player) - totalWeight
 end
 exports('GetFreeWeight', GetFreeWeight)
 
@@ -489,7 +503,7 @@ function OpenInventoryById(source, targetId)
     local formattedInventory = {
         name = 'otherplayer-' .. targetId,
         label = GetPlayerName(targetId),
-        maxweight = Config.MaxWeight,
+        maxweight = GetPlayerMaxWeight(TargetPlayer),
         slots = Config.MaxSlots,
         inventory = targetItems
     }
@@ -638,7 +652,7 @@ function AddItem(identifier, item, amount, slot, info, reason)
     local inventoryType = nil
 
     if player then
-        inventory, inventoryWeight, inventorySlots = player.PlayerData.items, Config.MaxWeight, Config.MaxSlots
+        inventory, inventoryWeight, inventorySlots = player.PlayerData.items, GetPlayerMaxWeight(player), Config.MaxSlots
         inventoryType = 'player'
     elseif Inventories[identifier] then
         inventory = Inventories[identifier].items
@@ -869,9 +883,10 @@ end
 
 exports('GetInventory', GetInventory)
 
-exports('GetPlayerInventoryLimits', function()
+exports('GetPlayerInventoryLimits', function(source)
+    local Player = source and QBCore.Functions.GetPlayer(source) or nil
     return {
-        weight = Config.MaxWeight,
+        weight = GetPlayerMaxWeight(Player),
         slots = Config.MaxSlots
     }
 end)

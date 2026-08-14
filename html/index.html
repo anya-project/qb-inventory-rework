@@ -4,26 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>QB Inventory</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap"
-      rel="stylesheet"
-    />
+    <link rel="stylesheet" href="lib/inter-font.css" />
+    <link rel="stylesheet" href="lib/fontawesome/all.min.css" />
     <link rel="stylesheet" href="main.css" />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/floating-vue@5.2.2/dist/style.css"
-    />
-    <script
-      src="https://kit.fontawesome.com/d37231be1f.js"
-      crossorigin="anonymous"
-    ></script>
-    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@floating-ui/core@1.6.0"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@floating-ui/dom@1.6.1"></script>
-    <script src="https://unpkg.com/floating-vue@5.2.2/dist/floating-vue.umd.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
+    <link rel="stylesheet" href="lib/floating-vue.css" />
+    <script src="lib/vue.global.prod.js"></script>
+    <script src="lib/floating-ui.core.umd.min.js"></script>
+    <script src="lib/floating-ui.dom.umd.min.js"></script>
+    <script src="lib/floating-vue.umd.js"></script>
+    <script src="lib/axios.min.js"></script>
     <script src="app.js" defer></script>
   </head>
 
@@ -86,7 +75,8 @@
                   </div>
                   <div class="item-slot-img">
                     <img
-                      :src="'images/' + getItemInSlot(slot, 'player').image"
+                      :src="imgPath(getItemInSlot(slot, 'player').image)"
+                      @error="handleImageError"
                       alt=""
                     />
                   </div>
@@ -155,7 +145,8 @@
               <div class="weapon-display-column">
                 <div class="weapon-main-image">
                   <img
-                    :src="'images/' + selectedWeaponForPanel.image"
+                    :src="imgPath(selectedWeaponForPanel.image)"
+                    @error="handleImageError"
                     :alt="selectedWeaponForPanel.label"
                   />
                 </div>
@@ -190,7 +181,8 @@
                     >
                       <img
                         v-if="getAttachmentByType('suppressor') || getAttachmentByType('muzzle')"
-                        :src="'images/' + (getAttachmentByType('suppressor') || getAttachmentByType('muzzle')).attachment + '.png'"
+                        :src="imgPath((getAttachmentByType('suppressor') || getAttachmentByType('muzzle')).attachment + '.png')"
+                        @error="handleImageError"
                       />
                       <i v-else class="fa-solid fa-plus empty-slot-icon"></i>
                     </div>
@@ -205,7 +197,8 @@
                     >
                       <img
                         v-if="getAttachmentByType('flashlight')"
-                        :src="'images/' + getAttachmentByType('flashlight').attachment + '.png'"
+                        :src="imgPath(getAttachmentByType('flashlight').attachment + '.png')"
+                        @error="handleImageError"
                       />
                       <i v-else class="fa-solid fa-plus empty-slot-icon"></i>
                     </div>
@@ -220,7 +213,8 @@
                     >
                       <img
                         v-if="getAttachmentByType('grip')"
-                        :src="'images/' + getAttachmentByType('grip').attachment + '.png'"
+                        :src="imgPath(getAttachmentByType('grip').attachment + '.png')"
+                        @error="handleImageError"
                       />
                       <i v-else class="fa-solid fa-plus empty-slot-icon"></i>
                     </div>
@@ -235,7 +229,8 @@
                     >
                       <img
                         v-if="getAttachmentByType('scope')"
-                        :src="'images/' + getAttachmentByType('scope').attachment + '.png'"
+                        :src="imgPath(getAttachmentByType('scope').attachment + '.png')"
+                        @error="handleImageError"
                       />
                       <i v-else class="fa-solid fa-plus empty-slot-icon"></i>
                     </div>
@@ -250,7 +245,8 @@
                     >
                       <img
                         v-if="getAttachmentByType('clip') || getAttachmentByType('drum')"
-                        :src="'images/' + (getAttachmentByType('clip') || getAttachmentByType('drum')).attachment + '.png'"
+                        :src="imgPath((getAttachmentByType('clip') || getAttachmentByType('drum')).attachment + '.png')"
+                        @error="handleImageError"
                       />
                       <i v-else class="fa-solid fa-plus empty-slot-icon"></i>
                     </div>
@@ -265,7 +261,8 @@
                     >
                       <img
                         v-if="getAttachmentByType('camo') || getAttachmentByType('finish')"
-                        :src="'images/' + (getAttachmentByType('camo') || getAttachmentByType('finish')).attachment + '.png'"
+                        :src="imgPath((getAttachmentByType('camo') || getAttachmentByType('finish')).attachment + '.png')"
+                        @error="handleImageError"
                       />
                       <i v-else class="fa-solid fa-plus empty-slot-icon"></i>
                     </div>
@@ -304,8 +301,10 @@
                 class="drop-zone-container"
               >
                 <div class="drop-zone-content">
-                  <i class="fas fa-arrow-down drop-zone-icon"></i>
-                  <p>Drop items here</p>
+                  <div class="drop-zone-icon-wrapper">
+                    <i class="fas fa-box-open drop-zone-icon"></i>
+                    <div class="drop-zone-pattern"></div>
+                  </div>
                 </div>
               </div>
               <div v-else class="item-grid">
@@ -331,7 +330,8 @@
                     </div>
                     <div class="item-slot-img">
                       <img
-                        :src="'images/' + getItemInSlot(slot, 'other').image"
+                        :src="imgPath(getItemInSlot(slot, 'other').image)"
+                        @error="handleImageError"
                         alt=""
                       />
                     </div>
@@ -376,7 +376,8 @@
               </div>
               <div class="item-slot-img">
                 <img
-                  :src="'images/' + getHotbarItemInSlot(slot).image"
+                  :src="imgPath(getHotbarItemInSlot(slot).image)"
+                  @error="handleImageError"
                   alt=""
                 />
               </div>
@@ -398,16 +399,20 @@
         </div>
       </div>
 
-      <div class="notification-container" v-if="showNotification">
-        <div class="notification-slot">
+      <div class="notification-container" v-if="notifications.length > 0">
+        <div 
+          v-for="notify in notifications" 
+          :key="notify.id" 
+          class="notification-slot"
+        >
           <div class="notification-title">
-            <p>{{ notificationType || 'NOTIFICATION' }}</p>
+            <p>{{ notify.type || 'NOTIFICATION' }}</p>
           </div>
-          <div class="item-slot-img" v-if="notificationImage">
-            <img :src="notificationImage" alt="item-image" />
+          <div class="item-slot-img" v-if="notify.image">
+            <img :src="imgPath(notify.image)" @error="handleImageError" alt="item-image" />
           </div>
           <div class="item-slot-label">
-            <p>{{ notificationText || '...' }}</p>
+            <p>{{ notify.text || '...' }}</p>
           </div>
         </div>
       </div>
@@ -421,7 +426,7 @@
           >
             <div class="item-slot-content">
               <div class="item-slot-img">
-                <img :src="'images/' + item.image" alt="" />
+                <img :src="imgPath(item.image)" @error="handleImageError" alt="" />
               </div>
               <div class="item-slot-label">
                 <p>{{ item.label }}</p>

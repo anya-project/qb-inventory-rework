@@ -39,6 +39,8 @@ QB Inventory Rework is a complete replacement for the default QBCore inventory, 
 - Weapon attachment panel
 - New 2-panel UI layout
 - Toggle blur effect
+- Per-player max weight override (via `metadata.maxweight`, for VIP/inventory-upgrade perks)
+- Self-hosted UI assets — no external CDN calls (fonts, icons, Vue, etc. are all bundled in `html/lib/`)
 - Code modifications for optimization & security
 
 ---
@@ -69,7 +71,17 @@ Follow these steps **very carefully** to ensure a smooth installation.
 
 You need to edit the `qb-core/server/player.lua` file to integrate the money-as-an-item system.
 
+> ⚠️ **Before you copy-paste anything below**: not every `qb-core` build is structured the same way. Open `qb-core/server/player.lua` and check how `AddMoney` / `RemoveMoney` / `SetMoney` / `GetMoney` are actually defined:
+>
+> - **Vanilla-style** — assigned inside `Player.new(...)` as `self.Functions.AddMoney = function(...) ... end`. Use **Variant A** below.
+> - **Class-style** — defined outside as standalone methods with colon syntax: `function Player:AddMoney(moneytype, amount, reason)`, and `self.Functions.AddMoney` is auto-generated later by wrapping the class method. Use **Variant B** below.
+>
+> Picking the wrong variant will either fail to compile or silently never trigger (because your `qb-core` never calls the function you edited). If you're not sure, search the file for the literal string `self.Functions.AddMoney = function` — if it's there, you're vanilla-style; if instead you find `function Player:AddMoney`, you're class-style.
+> Also: if your `qb-core` fork has extra custom logic in these functions (VIP perks, custom logging, etc.), don't blindly delete-and-replace — merge the cash-as-item branch in on top of your existing code instead, the way it's done in the two variants below.
+
 #### A. Replace Money Management Functions
+
+##### Variant A — Vanilla-style (`self.Functions.X = function...`)
 
 Open `qb-core/server/player.lua` and find the following functions:
 
@@ -244,75 +256,129 @@ end
 -----------------------------EDITED BY APCODE END--------------------------
 ```
 
-#### B. Replace the `CheckPlayerData` Function
+##### Variant B — Class-style (`function Player:AddMoney(...)`)
 
-Still in `qb-core/server/player.lua`, find the function `QBCore.Player.CheckPlayerData`. Delete this function and replace it with the code block below. This change ensures the player's inventory is loaded correctly when they join the server.
+Some `qb-core` forks define these as real methods on a `Player` class/metatable (colon syntax), with `self.Functions.AddMoney` etc. auto-generated later by wrapping the class method. If that's what you found in the check above, edit the class methods directly instead — do **not** touch `self.Functions` for this variant.
+
+Find `function Player:AddMoney(moneytype, amount, reason)` and insert the cash-as-item branch right after the existing `nil`/negative-amount guard clauses (before the function does its normal balance math). Do the same for `RemoveMoney`, `SetMoney`, and `GetMoney`:
 
 ```lua
 --------------------------EDITED BY APCODE START--------------------------
-function QBCore.Player.CheckPlayerData(source, PlayerData)
-    PlayerData = PlayerData or {}
-    local Offline = not source
-    if source then
-        PlayerData.source = source
-        PlayerData.license = PlayerData.license or QBCore.Functions.GetIdentifier(source, 'license')
-        PlayerData.name = GetPlayerName(source)
-    end
-    local validatedJob = false
-    if PlayerData.job and PlayerData.job.name ~= nil and PlayerData.job.grade and PlayerData.job.grade.level ~= nil then
-        local jobInfo = QBCore.Shared.Jobs[PlayerData.job.name]
-        if jobInfo then
-            local jobGradeInfo = jobInfo.grades[tostring(PlayerData.job.grade.level)]
-            if jobGradeInfo then
-                PlayerData.job.label = jobInfo.label
-                PlayerData.job.grade.name = jobGradeInfo.name
-                PlayerData.job.payment = jobGradeInfo.payment
-                PlayerData.job.grade.isboss = jobGradeInfo.isboss or false
-                PlayerData.job.isboss = jobGradeInfo.isboss or false
-                validatedJob = true
-            end
+function Player:AddMoney(moneytype, amount, reason)
+    -- ...keep your existing guard clauses above this line...
+
+    if moneytype == 'cash' and GetResourceState('qb-inventory') ~= 'missing' and exports['qb-inventory']:IsCashAsItem() then
+        if not exports['qb-inventory']:AddCash(self.PlayerData.source, amount, reason) then return false end
+        self.PlayerData.money.cash = exports['qb-inventory']:GetItemCount(self.PlayerData.source, 'cash') or 0
+        if not self.Offline then
+            self:UpdateClient('money', self.PlayerData.money)
+            TriggerEvent('qb-log:server:CreateLog', 'playermoney', 'AddMoney (as item)', 'lightgreen', '**' .. self.PlayerData.name .. ' (citizenid: ' .. self.PlayerData.citizenid .. ' | id: ' .. self.PlayerData.source .. ')** $' .. amount .. ' (cash) added, reason: ' .. reason, amount > 100000)
+            TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, moneytype, amount, false)
+            TriggerClientEvent('QBCore:Client:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'add', reason)
+            TriggerEvent('QBCore:Server:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'add', reason)
         end
+        return true
     end
-    if validatedJob == false then
-        PlayerData.job = nil
-    end
-    local validatedGang = false
-    if PlayerData.gang and PlayerData.gang.name ~= nil and PlayerData.gang.grade and PlayerData.gang.grade.level ~= nil then
-        local gangInfo = QBCore.Shared.Gangs[PlayerData.gang.name]
-        if gangInfo then
-            local gangGradeInfo = gangInfo.grades[tostring(PlayerData.gang.grade.level)]
-            if gangGradeInfo then
-                PlayerData.gang.label = gangInfo.label
-                PlayerData.gang.grade.name = gangGradeInfo.name
-                PlayerData.gang.payment = gangGradeInfo.payment
-                PlayerData.gang.grade.isboss = gangGradeInfo.isboss or false
-                PlayerData.gang.isboss = gangGradeInfo.isboss or false
-                validatedGang = true
-            end
+
+    -- ...your existing balance-update code continues unchanged below...
+end
+
+function Player:RemoveMoney(moneytype, amount, reason)
+    -- ...keep your existing guard clauses above this line...
+
+    if moneytype == 'cash' and GetResourceState('qb-inventory') ~= 'missing' and exports['qb-inventory']:IsCashAsItem() then
+        if not exports['qb-inventory']:RemoveCash(self.PlayerData.source, amount, reason) then return false end
+        self.PlayerData.money.cash = exports['qb-inventory']:GetItemCount(self.PlayerData.source, 'cash') or 0
+        if not self.Offline then
+            self:UpdateClient('money', self.PlayerData.money)
+            TriggerEvent('qb-log:server:CreateLog', 'playermoney', 'RemoveMoney (as item)', 'red', '**' .. self.PlayerData.name .. ' (citizenid: ' .. self.PlayerData.citizenid .. ' | id: ' .. self.PlayerData.source .. ')** $' .. amount .. ' (cash) removed, reason: ' .. reason, amount > 100000)
+            TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, moneytype, amount, true)
+            TriggerClientEvent('QBCore:Client:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'remove', reason)
+            TriggerEvent('QBCore:Server:OnMoneyChange', self.PlayerData.source, moneytype, amount, 'remove', reason)
         end
+        return true
     end
-    if validatedGang == false then
-        PlayerData.gang = nil
-    end
-    applyDefaults(PlayerData, QBCore.Config.Player.PlayerDefaults)
-    if GetResourceState('qb-inventory') ~= 'missing' then
-        PlayerData.items = exports['qb-inventory']:LoadInventory(PlayerData.source, PlayerData.citizenid)
-        if exports['qb-inventory']:IsCashAsItem() then
-            if PlayerData.items then
-                local cashInInventory = 0
-                for _, item in pairs(PlayerData.items) do
-                    if item and item.name == 'cash' then
-                        cashInInventory = cashInInventory + item.amount
-                    end
-                end
-                PlayerData.money.cash = cashInInventory
-            end
+
+    -- ...your existing DontAllowMinus / balance-update code continues unchanged below...
+end
+
+function Player:SetMoney(moneytype, amount, reason)
+    -- ...keep your existing guard clauses above this line...
+
+    if moneytype == 'cash' and GetResourceState('qb-inventory') ~= 'missing' and exports['qb-inventory']:IsCashAsItem() then
+        local currentCash = exports['qb-inventory']:GetItemCount(self.PlayerData.source, 'cash') or 0
+        local difference  = amount - currentCash
+        local success     = true
+        if difference > 0 then
+            success = exports['qb-inventory']:AddItem(self.PlayerData.source, 'cash', difference, nil, {}, 'setmoney_command')
+        elseif difference < 0 then
+            success = exports['qb-inventory']:RemoveItem(self.PlayerData.source, 'cash', math.abs(difference), nil, 'setmoney_command')
         end
+        if not success then return false end
+        local newTotalCash = exports['qb-inventory']:GetItemCount(self.PlayerData.source, 'cash') or 0
+        self.PlayerData.money.cash = newTotalCash
+        if not self.Offline then
+            self:UpdateClient('money', self.PlayerData.money)
+            TriggerEvent('qb-log:server:CreateLog', 'playermoney', 'SetMoney (as item)', 'green', '**' .. self.PlayerData.name .. ' (citizenid: ' .. self.PlayerData.citizenid .. ' | id: ' .. self.PlayerData.source .. ')** cash set to $' .. newTotalCash .. ', reason: ' .. reason)
+            TriggerClientEvent('hud:client:OnMoneyChange', self.PlayerData.source, moneytype, math.abs(difference), difference < 0)
+            TriggerClientEvent('QBCore:Client:OnMoneyChange', self.PlayerData.source, moneytype, newTotalCash, 'set', reason)
+            TriggerEvent('QBCore:Server:OnMoneyChange', self.PlayerData.source, moneytype, newTotalCash, 'set', reason)
+        end
+        return true
     end
-    return QBCore.Player.CreatePlayer(PlayerData, Offline)
+
+    -- ...your existing balance-set code continues unchanged below...
+end
+
+function Player:GetMoney(moneytype)
+    if not moneytype then return false end
+    moneytype = moneytype:lower()
+
+    if moneytype == 'cash' and GetResourceState('qb-inventory') ~= 'missing' and exports['qb-inventory']:IsCashAsItem() then
+        local cashCount = exports['qb-inventory']:GetItemCount(self.PlayerData.source, 'cash') or 0
+        if self.PlayerData.money.cash ~= cashCount then
+            self.PlayerData.money.cash = cashCount
+        end
+        return cashCount
+    end
+
+    return self.PlayerData.money[moneytype]
 end
 --------------------------EDITED BY APCODE END--------------------------
 ```
+
+#### B. Update the `CheckPlayerData` Function
+
+Still in `qb-core/server/player.lua`, find the function `QBCore.Player.CheckPlayerData`. **Do not delete the whole function** — some forks add their own logic in there (job default-duty handling, custom defaults, etc.), and wiping it out will silently regress those features. Instead, find the block that loads the inventory. It will look something like this:
+
+```lua
+if GetResourceState('qb-inventory') ~= 'missing' then
+    PlayerData.items = exports['qb-inventory']:LoadInventory(PlayerData.source, PlayerData.citizenid)
+end
+```
+
+(it may be gated with an extra `not Offline and ...` condition too — keep whatever guard your version already has) and insert the cash sync right after the `LoadInventory` line, inside the same `if` block:
+
+```lua
+--------------------------EDITED BY APCODE START--------------------------
+if GetResourceState('qb-inventory') ~= 'missing' then
+    PlayerData.items = exports['qb-inventory']:LoadInventory(PlayerData.source, PlayerData.citizenid)
+    if exports['qb-inventory']:IsCashAsItem() then
+        local cashInInventory = 0
+        if PlayerData.items then
+            for _, item in pairs(PlayerData.items) do
+                if item and item.name == 'cash' then
+                    cashInInventory = cashInInventory + item.amount
+                end
+            end
+        end
+        PlayerData.money.cash = cashInInventory
+    end
+end
+--------------------------EDITED BY APCODE END--------------------------
+```
+
+This ensures the player's inventory — and their synced cash balance — is loaded correctly when they join the server.
 
 ### Step 3: Add Cash Item to `qb-core/shared/items.lua`
 

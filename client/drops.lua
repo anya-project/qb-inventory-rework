@@ -12,7 +12,7 @@ function GetDrops()
         if not drops then return end
         for k, v in pairs(drops) do
             local bag = NetworkGetEntityFromNetworkId(v.entityId)
-            if DoesEntityExist(bag) then
+            if DoesEntityExist(bag) and GetEntityType(bag) == 3 then
                 exports['qb-target']:AddTargetEntity(bag, {
                     options = {
                         {
@@ -34,16 +34,23 @@ end
 -- Events
 
 RegisterNetEvent('qb-inventory:client:removeDropTarget', function(dropId)
-    while not NetworkDoesNetworkIdExist(dropId) do Wait(10) end
+    if not NetworkDoesNetworkIdExist(dropId) then return end
     local bag = NetworkGetEntityFromNetworkId(dropId)
-    while not DoesEntityExist(bag) do Wait(10) end
+    if not DoesEntityExist(bag) then return end
     exports['qb-target']:RemoveTargetEntity(bag)
 end)
 
 RegisterNetEvent('qb-inventory:client:setupDropTarget', function(dropId)
-    while not NetworkDoesNetworkIdExist(dropId) do Wait(10) end
+    local timeout = 50
+    while not NetworkDoesNetworkIdExist(dropId) and timeout > 0 do
+        Wait(10)
+        timeout = timeout - 1
+    end
+    if not NetworkDoesNetworkIdExist(dropId) then return end
+
     local bag = NetworkGetEntityFromNetworkId(dropId)
-    while not DoesEntityExist(bag) do Wait(10) end
+    if not DoesEntityExist(bag) or GetEntityType(bag) ~= 3 then return end
+
     local newDropId = 'drop-' .. dropId
     exports['qb-target']:AddTargetEntity(bag, {
         options = {

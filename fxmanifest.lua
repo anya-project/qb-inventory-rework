@@ -1,3 +1,5 @@
+
+
 fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
@@ -35,6 +37,12 @@ files {
     'html/main.css',
     'html/app.js',
     'html/images/*.png',
+    'html/images/*.webp',
+    'html/lib/*.js',
+    'html/lib/*.css',
+    'html/lib/fonts/*.woff2',
+    'html/lib/fontawesome/all.min.css',
+    'html/lib/fontawesome/webfonts/*.woff2',
 }
 
 exports {
@@ -43,3 +51,4 @@ exports {
 
 dependency 'qb-weapons'
 dependency 'qb-core'
+

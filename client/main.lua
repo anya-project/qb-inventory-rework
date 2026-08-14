@@ -162,6 +162,7 @@ RegisterNetEvent('qb-inventory:client:closeInv', function()
 end)
 
 RegisterNetEvent('qb-inventory:client:updateInventory', function()
+    PlayerData = QBCore.Functions.GetPlayerData()
     local items = {}
     if PlayerData and type(PlayerData.items) == "table" then
         items = PlayerData.items
@@ -194,11 +195,18 @@ end)
 RegisterNetEvent('qb-inventory:client:openInventory', function(items, other)
     ToggleHUD(false)
     SetNuiFocus(true, true)
+    -- Retrieve the absolute freshest player data directly from QBCore to prevent desyncs
+    PlayerData = QBCore.Functions.GetPlayerData()
+    local playerMaxWeight = Config.MaxWeight
+    local metaMaxWeight = PlayerData and PlayerData.metadata and PlayerData.metadata['maxweight']
+    if type(metaMaxWeight) == 'number' and metaMaxWeight > 0 then
+        playerMaxWeight = metaMaxWeight
+    end
     SendNUIMessage({
         action = 'open',
         inventory = items,
         slots = Config.MaxSlots,
-        maxweight = Config.MaxWeight,
+        maxweight = playerMaxWeight,
         other = other
     })
 end)
@@ -314,16 +322,23 @@ RegisterNUICallback('RemoveAttachment', function(data, cb)
 end)
 
 RegisterNUICallback('GetNearbyPlayers', function(_, cb)
-    local nearbyPlayers = {}
+    local nearbyIds = {}
     local playersInRadius = QBCore.Functions.GetPlayersFromCoords(GetEntityCoords(PlayerPedId()), 5.0) 
 
     for _, pId in ipairs(playersInRadius) do
         if pId ~= PlayerId() then 
-            table.insert(nearbyPlayers, { id = GetPlayerServerId(pId), name = GetPlayerName(pId) })
+            table.insert(nearbyIds, GetPlayerServerId(pId))
         end
     end
-    
-    cb(nearbyPlayers)
+
+    if #nearbyIds == 0 then
+        cb({})
+        return
+    end
+
+    QBCore.Functions.TriggerCallback('qb-inventory:server:getNearbyPlayerNames', function(players)
+        cb(players or {})
+    end, nearbyIds)
 end)
 
 RegisterNUICallback('GiveItemToTarget', function(data, cb)
@@ -371,6 +386,8 @@ end, false)
 
 for i = 1, 5 do
     RegisterCommand('slot_' .. i, function()
+        if LocalPlayer.state.inv_busy then return end
+        if PlayerData.metadata['isdead'] or PlayerData.metadata['inlaststand'] or PlayerData.metadata['ishandcuffed'] then return end
         local itemData = PlayerData.items[i]
         if not itemData then return end
         if itemData.type == "weapon" then
