@@ -1,20 +1,7 @@
-<!-- Banner / Cover Image -->
-<p align="center">
-    <img width="300" src="https://i.imgur.com/JaOJmKS.png" />
-
----
-
-> ⚠️ **Note:** This description is not always up to date.
-> Many new improvements and features have been added, so the information below may not be fully accurate.
-> For the latest and most accurate updates, please join our **[Official Discord](https://discord.gg/HMMYNPEXGY)** — all recent changes and announcements are posted there.
-
----
-
 ## 🌐 Connect with Us
 
 <p align="center">
   <a href="https://discord.gg/HMMYNPEXGY"><img src="https://img.shields.io/badge/Discord-%237289DA.svg?style=for-the-badge&logo=discord&logoColor=white"/></a>
-  <a href="https://ko-fi.com/H2H51HUE4X"><img src="https://ko-fi.com/img/githubbutton_sm.svg"/></a>
 </p>
 
 ## [QB INVENTORY REWORK] a modern, feature-rich, and optimized inventory system for the QBCore Framework.
@@ -84,10 +71,6 @@ Follow these steps **very carefully** to ensure a smooth installation.
 **🚨 IMPORTANT: Always create a backup of any file you are about to edit!**
 
 You need to edit the `qb-core/server/player.lua` file to integrate the money-as-an-item system. This only enables the money side of it — `Config.CashAsItem` in `config/config.lua` must also be set to `true`, or none of this branch ever runs (see Configuration).
-
-> This guide assumes your `qb-core` defines these as class methods with colon syntax — `function Player:AddMoney(moneytype, amount, reason)` — which is how the current `qbcore-framework/qb-core` is structured. If your fork instead assigns them inside `Player.new(...)` as `self.Functions.AddMoney = function(...) ... end`, the snippets below won't wire up correctly as-is; ask in our [Discord](https://discord.gg/HMMYNPEXGY) for help adapting them.
->
-> If your `qb-core` fork has extra custom logic in these functions (VIP perks, custom logging, etc.), don't blindly delete-and-replace the whole function — merge the cash-as-item branch in on top of your existing code, the way it's done below.
 
 #### A. Add the Cash-as-Item Branch to the Money Functions
 
