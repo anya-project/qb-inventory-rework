@@ -1,11 +1,7 @@
--- client/drops.lua
-
 HoldingDrop = false
 local bagObject = nil
 local heldDrop = nil
 CurrentDrop = nil
-
--- Functions
 
 function GetDrops()
     QBCore.Functions.TriggerCallback('qb-inventory:server:GetCurrentDrops', function(drops)
@@ -30,8 +26,6 @@ function GetDrops()
         end
     end)
 end
-
--- Events
 
 RegisterNetEvent('qb-inventory:client:removeDropTarget', function(dropId)
     if not NetworkDoesNetworkIdExist(dropId) then return end
@@ -95,8 +89,6 @@ RegisterNetEvent('qb-inventory:client:setupDropTarget', function(dropId)
     })
 end)
 
--- NUI Callbacks
-
 RegisterNUICallback('DropItemFromUI', function(item, cb)
     QBCore.Functions.TriggerCallback('qb-inventory:server:createDrop', function(responseData)
         if responseData and responseData.netId then
@@ -113,8 +105,6 @@ RegisterNUICallback('DropItemFromUI', function(item, cb)
         end
     end, item)
 end)
-
--- Thread
 
 CreateThread(function()
     while true do

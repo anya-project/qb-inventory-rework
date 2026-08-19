@@ -7,10 +7,10 @@
   --surface: rgba(22, 22, 22, 0.85);
   --border: #2c2c2c;
   --surface-border: rgba(44, 44, 44, 0.5);
-  --primary: #c6f21a;
-  --accent: #c6f21a;
+  --primary: #3d3d3d;
+  --accent: #3d3d3d;
 
-  --on-primary: #0d0d0d;
+  --on-primary: #f2f2f2;
   --text-primary: #f2f2f2;
   --text-secondary: #a3a3a3;
   --text-muted: #6b6b6b;
@@ -108,7 +108,7 @@ body {
   text-transform: uppercase;
   letter-spacing: 1.5px;
   font-weight: var(--font-weight-bold);
-  background: linear-gradient(135deg, #ffffff 0%, var(--primary) 100%);
+  background: linear-gradient(135deg, #ffffff 0%, var(--text-secondary) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -119,10 +119,10 @@ body {
   color: var(--text-primary);
   font-size: 0.85em;
   font-weight: var(--font-weight-medium);
-  background: rgba(198, 242, 26, 0.1);
+  background: rgba(61, 61, 61, 0.1);
   padding: 4px 10px;
   border-radius: 6px;
-  border: 1px solid rgba(198, 242, 26, 0.2);
+  border: 1px solid rgba(61, 61, 61, 0.2);
 }
 
 .current-weight p {
@@ -143,9 +143,9 @@ body {
   transition: width 0.3s ease;
   background-image: linear-gradient(
     to right,
-    rgb(214, 247, 90) 0%,
-    rgb(198, 242, 26) 50%,
-    rgb(158, 194, 20) 100%
+    rgb(74, 74, 74) 0%,
+    rgb(61, 61, 61) 50%,
+    rgb(48, 48, 48) 100%
   );
   background-size: 100% 100%;
 }
@@ -182,7 +182,7 @@ body {
 
 .item-slot:hover {
   border-color: var(--primary);
-  box-shadow: 0 2px 8px rgba(198, 242, 26, 0.3);
+  box-shadow: 0 2px 8px rgba(61, 61, 61, 0.3);
   background: rgba(30, 30, 30, 0.6);
 }
 
@@ -225,7 +225,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  box-shadow: 0 2px 4px rgba(198, 242, 26, 0.3);
+  box-shadow: 0 2px 4px rgba(61, 61, 61, 0.3);
   z-index: 3;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -252,7 +252,7 @@ body {
   font-size: 0.7em;
   font-weight: var(--font-weight-bold);
   color: var(--text-primary);
-  background: rgba(198, 242, 26, 0.95);
+  background: rgba(61, 61, 61, 0.95);
   padding: 3px 6px;
   border-radius: 6px;
   z-index: 4;
@@ -284,9 +284,9 @@ body {
   overflow: hidden;
   background-image: linear-gradient(
     to right,
-    rgb(214, 247, 90) 0%,
-    rgb(198, 242, 26) 50%,
-    rgb(158, 194, 20) 100%
+    rgb(74, 74, 74) 0%,
+    rgb(61, 61, 61) 50%,
+    rgb(48, 48, 48) 100%
   );
   z-index: 1;
 }
@@ -329,8 +329,8 @@ body {
 }
 
 .inventory-logo {
-  max-width: 120px;
-  max-height: 48px;
+  max-width: 190px;
+  max-height: 76px;
   width: auto;
   height: auto;
   object-fit: contain;
@@ -459,25 +459,7 @@ body {
 .context-menu li:hover {
   background: var(--primary);
   color: var(--on-primary);
-  box-shadow: 0 2px 6px rgba(198, 242, 26, 0.3);
-}
-
-.submenu {
-  position: absolute;
-  top: -5px;
-
-  left: 100%;
-  display: none;
-  background-color: var(--surface);
-  border: 1px solid var(--surface-border);
-  border-radius: var(--radius);
-  padding: 5px 0;
-  list-style: none;
-  min-width: 100px;
-}
-
-.context-menu li:hover > .submenu {
-  display: block;
+  box-shadow: 0 2px 6px rgba(61, 61, 61, 0.3);
 }
 
 .v-popper--theme-tooltip .v-popper__inner {
@@ -501,7 +483,7 @@ body {
 
 .tooltip-header {
   font-weight: var(--font-weight-bold);
-  color: var(--primary);
+  color: var(--text-secondary);
   margin-bottom: 5px;
 }
 
@@ -531,7 +513,7 @@ body {
 .tooltip-weight {
   text-align: right;
   font-size: 0.9em;
-  color: var(--primary);
+  color: var(--text-secondary);
 }
 
 .hotbar-container {
@@ -601,7 +583,7 @@ body {
   text-align: center;
   font-size: 0.75em;
   font-weight: var(--font-weight-bold);
-  color: var(--primary);
+  color: var(--text-secondary);
   padding-bottom: 4px;
   border-bottom: 1px solid var(--surface-border);
 }
@@ -676,79 +658,23 @@ body {
   justify-content: center;
   text-align: center;
   color: var(--text-secondary);
-  transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  background: 
-    repeating-linear-gradient(
-      45deg,
-      transparent,
-      transparent 10px,
-      rgba(198, 242, 26, 0.03) 10px,
-      rgba(198, 242, 26, 0.03) 20px
-    );
 }
 
 .drop-zone-icon-wrapper {
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 120px;
-  height: 120px;
+  width: 90px;
+  height: 90px;
+  border: 2px solid var(--surface-border);
+  border-radius: 50%;
 }
 
 .drop-zone-icon {
-  font-size: 4em;
-  color: var(--primary);
-  opacity: 0.6;
-  z-index: 2;
-  transition: all 0.3s ease;
-  filter: drop-shadow(0 2px 8px rgba(198, 242, 26, 0.3));
-}
-
-.drop-zone-pattern {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border: 3px dashed var(--primary);
-  border-radius: 50%;
-  opacity: 0.4;
-}
-
-.other-inventory-section:has(.drop-zone-container):hover .drop-zone-content {
-  border-color: var(--primary);
-  border-width: 3px;
-  background: 
-    repeating-linear-gradient(
-      45deg,
-      transparent,
-      transparent 10px,
-      rgba(198, 242, 26, 0.08) 10px,
-      rgba(198, 242, 26, 0.08) 20px
-    );
-  box-shadow: 0 0 20px rgba(198, 242, 26, 0.2), inset 0 0 20px rgba(198, 242, 26, 0.1);
-}
-
-.other-inventory-section:has(.drop-zone-container):hover .drop-zone-icon {
-  opacity: 1;
-  transform: scale(1.1) rotate(5deg);
-  filter: drop-shadow(0 4px 12px rgba(198, 242, 26, 0.5));
-}
-
-.other-inventory-section:has(.drop-zone-container):hover .drop-zone-pattern {
-  opacity: 0.7;
-  border-color: var(--primary);
-}
-
-.submenu.player-list-submenu > li {
-  position: relative;
-}
-
-.submenu .quantity-submenu {
-  top: -5px;
-
-  left: 100%;
+  font-size: 2em;
+  color: var(--text-secondary);
 }
 
 .submenu-info-item {
@@ -762,21 +688,95 @@ body {
   color: var(--text-secondary) !important;
 }
 
-.player-list-item .quantity-input-submenu {
-  position: absolute;
-  top: -8px;
-  left: 100%;
-  padding: 8px;
-  background-color: var(--surface);
-  border: 1px solid var(--surface-border);
-  border-radius: var(--radius);
-
-  display: flex !important;
-
-  flex-direction: row;
+.popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
   align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.popup-panel {
+  width: 260px;
+  max-height: 70vh;
+  background: rgba(22, 22, 22, 0.98);
+  border: 1.5px solid var(--surface-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.popup-panel-small {
+  width: 220px;
+}
+
+.popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.popup-header h3 {
+  margin: 0;
+  font-size: 0.95em;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.popup-body {
+  padding: 12px 14px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.popup-player-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.popup-player-item {
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85em;
+  color: var(--text-primary);
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.popup-player-item:hover {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.popup-player-item.active {
+  border-color: var(--primary);
+  background: rgba(61, 61, 61, 0.3);
+}
+
+.popup-actions {
+  display: flex;
   gap: 8px;
-  z-index: 1002;
+  align-items: center;
+}
+
+.popup-actions .quantity-input {
+  flex: 1;
 }
 
 .quantity-input {
@@ -793,7 +793,7 @@ body {
 .quantity-input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(198, 242, 26, 0.2);
+  box-shadow: 0 0 0 2px rgba(61, 61, 61, 0.2);
 }
 
 .give-button {
@@ -809,7 +809,7 @@ body {
 }
 
 .give-button:hover {
-  background-color: #9ec214;
+  background-color: #4d4d4d;
 }
 
 .item-slot-expiry {
@@ -872,7 +872,7 @@ body {
 .attachment-header h3 {
   margin: 0;
   font-size: 1.1em;
-  color: var(--primary);
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 1px;
 }
@@ -909,7 +909,7 @@ body {
 .attachment-header h3 {
   margin: 0;
   font-size: 1.1em;
-  color: var(--primary);
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 1px;
 }
@@ -958,7 +958,7 @@ body {
 
   font-size: 0.9em;
   font-weight: var(--font-weight-bold);
-  color: var(--primary);
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 1px;
 }

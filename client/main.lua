@@ -1,5 +1,3 @@
---client/main.lua
-
 QBCore = exports['qb-core']:GetCoreObject()
 PlayerData = nil
 local hotbarShown = false
@@ -17,7 +15,6 @@ local function ToggleHUD(show)
         end
     end
 end
--- Handlers
 
 RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
     LocalPlayer.state:set('inv_busy', false, true)
@@ -51,8 +48,6 @@ RegisterNetEvent('qb-inventory:client:sendServerTime', function(serverTime)
     })
 end)
 
--- Functions
-
 function LoadAnimDict(dict)
     if HasAnimDictLoaded(dict) then return end
 
@@ -85,9 +80,6 @@ local function FormatWeaponAttachments(itemdata)
     return attachments
 end
 
---- @param items string|table - The item(s) to check for. Can be a table of items or a single item as a string.
---- @param amount number [optional] - The minimum amount required for each item. If not provided, any amount greater than 0 will be considered.
---- @return boolean - Returns true if the player has the item(s) with the specified amount, false otherwise.
 function HasItem(items, amount)
     if not PlayerData or not PlayerData.items then
         return false
@@ -100,7 +92,7 @@ function HasItem(items, amount)
             for _, itemName in ipairs(items) do
                 requiredItems[itemName] = amount or 1
             end
-        else -- Map
+        else
             for itemName, itemAmount in pairs(items) do
                 requiredItems[itemName] = itemAmount
             end
@@ -124,7 +116,6 @@ function HasItem(items, amount)
 end
 
 exports('HasItem', HasItem)
--- Events
 
 RegisterNetEvent('qb-inventory:client:requiredItems', function(items, bool)
     local itemTable = {}
@@ -175,8 +166,6 @@ RegisterNetEvent('qb-inventory:client:updateInventory', function()
 end)
 
 RegisterNetEvent('qb-inventory:client:ItemBox', function(itemData, type, amount)
-   -- print(('DEBUG: Received ItemBox event with item: %s'):format(json.encode(itemData)))
-
     SendNUIMessage({
         action = 'itemBox',
         item = itemData,
@@ -195,7 +184,6 @@ end)
 RegisterNetEvent('qb-inventory:client:openInventory', function(items, other)
     ToggleHUD(false)
     SetNuiFocus(true, true)
-    -- Retrieve the absolute freshest player data directly from QBCore to prevent desyncs
     PlayerData = QBCore.Functions.GetPlayerData()
     local playerMaxWeight = Config.MaxWeight
     local metaMaxWeight = PlayerData and PlayerData.metadata and PlayerData.metadata['maxweight']
@@ -207,7 +195,8 @@ RegisterNetEvent('qb-inventory:client:openInventory', function(items, other)
         inventory = items,
         slots = Config.MaxSlots,
         maxweight = playerMaxWeight,
-        other = other
+        other = other,
+        showLogo = Config.ShowLogo
     })
 end)
 
@@ -216,8 +205,6 @@ RegisterNetEvent('qb-inventory:client:giveAnim', function()
     LoadAnimDict('mp_common')
     TaskPlayAnim(PlayerPedId(), 'mp_common', 'givetake1_b', 8.0, 1.0, -1, 16, 0, false, false, false)
 end)
-
--- NUI Callbacks
 
 RegisterNUICallback('PlayDropFail', function(_, cb)
     PlaySound(-1, 'Place_Prop_Fail', 'DLC_Dmod_Prop_Editor_Sounds', 0, 0, 1)
@@ -357,8 +344,6 @@ RegisterNUICallback('Notify', function(data, cb)
     cb('ok')
 end)
 
--- Vending
-
 CreateThread(function()
     exports['qb-target']:AddTargetModel(Config.VendingObjects, {
         options = {
@@ -372,8 +357,6 @@ CreateThread(function()
         distance = 2.5
     })
 end)
-
--- Commands
 
 RegisterCommand('openInv', function()
     if IsNuiFocused() or IsPauseMenuActive() then return end
@@ -406,10 +389,6 @@ RegisterKeyMapping('toggleHotbar', Lang:t('inf_mapping.tog_slots'), 'keyboard', 
 exports('ToggleHotbar', function(state)
     isHotbarDisabled = state
 end)
-
--- =================================================================
---                        PLAYER SEARCH FEATURE (ROB)
--- =================================================================
 
 CreateThread(function()
     while not exports['qb-target'] do Wait(100) end

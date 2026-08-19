@@ -1,15 +1,12 @@
----------------------------
--- server/main.lua
----------------------------
 QBCore = exports['qb-core']:GetCoreObject()
 Inventories = {}
 Drops = {}
 RegisteredShops = {}
 local saveCounters = {}
-local SAVE_DELAY = 2500 -- save timer in milliseconds
-Config.Debug = false -- Set to false to disable console logs
+local SAVE_DELAY = 2500
+Config.Debug = false
 
-local webhook_url = "YOUR_DISCORD_WEBHOOK_URL_HERE" -- Put your discord webhook url here for player rob logs
+local webhook_url = "https://discordapp.com/api/webhooks/1481451671405203476/jBxvrnOMeyFPWZ_BopDak3mGn5W-bpJFRDSePEidDdYDiq5du8sUA1mQbHC-B41ifUg_"
 
 
 local function SendRobberyLogToDiscord(title, color, fields)
@@ -61,7 +58,6 @@ CreateThread(function()
                     isOpen = false
                 }
             end
-            --   print(#result .. ' inventories successfully loaded')
         end
     end)
 end)
@@ -802,7 +798,7 @@ RegisterNetEvent('qb-inventory:server:SetInventoryData',
                 { name = "Robber", value = string.format("```Name: %s\nID: %s```", RobberPlayer.PlayerData.name, RobberPlayer.PlayerData.source), inline = true },
                 { name = "Victim", value = string.format("```Name: %s\nID: %s```", TargetPlayer.PlayerData.name, TargetPlayer.PlayerData.source), inline = true }
             }
-            SendRobberyLogToDiscord("Item Stolen During Robbery", 15158332, logFields) -- Red Color
+            SendRobberyLogToDiscord("Item Stolen During Robbery", 15158332, logFields)
         end
     end
 
@@ -995,10 +991,6 @@ function ScheduleSave(source)
     end)
 end
 
--- =================================================================
---                   PLAYER SEARCH FEATURE (ROB)
--- =================================================================
-
 RegisterNetEvent('robbery:server:initiateRob', function(targetId)
     local src = source
     local RobberPlayer = QBCore.Functions.GetPlayer(src)
@@ -1069,7 +1061,7 @@ RegisterNetEvent('qb-inventory:server:robPlayer', function(targetId)
         { name = "Robber", value = string.format("```Name: %s\nID: %s\nCitizenID: %s\nIdentifier: %s```", GetPlayerName(src), src, robberCitizenId, robberIdentifier), inline = true },
         { name = "Victim", value = string.format("```Name: %s\nID: %s\nCitizenID: %s\nIdentifier: %s```", GetPlayerName(targetId), targetId, targetCitizenId, targetIdentifier), inline = true }
     }
-    SendRobberyLogToDiscord("Player Robbery Initiated", 16753920, logFields) -- Orange Color
+    SendRobberyLogToDiscord("Player Robbery Initiated", 16753920, logFields)
 
     if not TargetPlayer.PlayerData.metadata['isdead'] then
         TriggerClientEvent('qb-inventory:client:beingRobbed', targetId)

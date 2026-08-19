@@ -3,17 +3,11 @@
 VehicleStorage = {
 
     byModel = {
-        ['zentorno'] = { -- EXAMPLE
-            trunkSlots = 10,
-            trunkWeight = 50000,
+        ['mule'] = {
+            trunkSlots = 100,
+            trunkWeight = 1000000,
             gloveboxSlots = 10,
-            gloveboxWeight = 50000
-        },
-        ['tigon'] = {  -- EXAMPLE
-            trunkSlots = 10,
-            trunkWeight = 50000,
-            gloveboxSlots = 5,
-            gloveboxWeight = 2000
+            gloveboxWeight = 120000
         },
     },
 
@@ -208,5 +202,5 @@ BackEngineVehicles = {
 -- Per-vehicle trunk interaction distance override, in meters.
 -- Anything not listed here falls back to the 5.0 default in client/vehicles.lua.
 TrunkDistances = {
-    -- [`zentorno`] = 15.0, -- EXAMPLE
+--    [`mule`] = 15.0,
 }

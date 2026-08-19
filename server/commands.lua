@@ -1,7 +1,3 @@
----------------------------
--- server/commands.lua
----------------------------
-
 QBCore.Commands.Add('giveitem', 'Give An Item (Admin Only)', { { name = 'id', help = 'Player ID' }, { name = 'item', help = 'Name of the item (not a label)' }, { name = 'amount', help = 'Amount of items' } }, false, function(source, args)
     local id = tonumber(args[1])
     local player = QBCore.Functions.GetPlayer(id)
@@ -101,7 +97,7 @@ QBCore.Commands.Add('clearinv', 'Clear Inventory (Admin Only)', { { name = 'id',
     ClearInventory(id)
 end, 'admin')
 
-local MAX_ALLOWED_CUSTOM_WEIGHT = 10000000 -- sanity ceiling for /setmaxweight, raise if your server genuinely needs more
+local MAX_ALLOWED_CUSTOM_WEIGHT = 10000000
 
 QBCore.Commands.Add('setmaxweight', 'Set or reset a player\'s custom max carry weight (Admin Only)', {
     { name = 'id', help = 'Player ID' },
@@ -143,8 +139,6 @@ QBCore.Commands.Add('setmaxweight', 'Set or reset a player\'s custom max carry w
     QBCore.Functions.Notify(source, ('Max weight for %s set to %d.'):format(GetPlayerName(id), weight), 'success')
     QBCore.Functions.Notify(id, ('Your max carry weight was set to %d.'):format(weight), 'primary')
 end, 'admin')
-
--- Keybindings
 
 RegisterCommand('closeInv', function(source)
     CloseInventory(source)

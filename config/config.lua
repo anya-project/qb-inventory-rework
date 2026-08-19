@@ -3,12 +3,14 @@
 Config = {
     UseTarget = GetConvar('UseTarget', 'false') == 'true',
 
-    CashAsItem = false,
+    ShowLogo = false, -- set to false to hide the logo in the inventory UI
+
+    CashAsItem = true,
 
     CustomHUD = {
-        Enabled = false, -- set to true to hide HUD when Inventory is open
-        ResourceName = '',
-        ExportName = ''
+        Enabled = true, -- set to true to hide HUD when Inventory is open
+        ResourceName = 'jg-hud',
+        ExportName = 'toggleHud'
     },
 
     MaxWeight = 120000,

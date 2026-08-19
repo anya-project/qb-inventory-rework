@@ -1,7 +1,3 @@
----------------------------
--- server/compat.lua
----------------------------
-
 QBCore = exports['qb-core']:GetCoreObject()
 
 RegisterNetEvent('inventory:server:OpenInventory', function(name, data_or_targetid, slots)

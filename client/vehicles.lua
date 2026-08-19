@@ -1,5 +1,3 @@
--- client/vehicles.lua
-
 local function IsBackEngine(vehModel)
     return BackEngineVehicles[vehModel]
 end
@@ -30,12 +28,9 @@ function CloseTrunk()
     end
 end
 
--- Callbacks
-
 QBCore.Functions.CreateClientCallback('qb-inventory:client:vehicleCheck', function(cb)
     local ped = PlayerPedId()
 
-    -- Glovebox
     local inVehicle = GetVehiclePedIsIn(ped, false)
     if inVehicle ~= 0 then
         local plate = GetVehicleNumberPlateText(inVehicle)
@@ -46,7 +41,6 @@ QBCore.Functions.CreateClientCallback('qb-inventory:client:vehicleCheck', functi
         return
     end
 
-    -- Trunk
     local vehicle, distance = QBCore.Functions.GetClosestVehicle()
     if vehicle ~= 0 and distance < (GetTrunkDistance(GetEntityModel(vehicle))) then
         local pos = GetEntityCoords(ped)

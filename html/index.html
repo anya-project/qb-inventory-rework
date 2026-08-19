@@ -53,7 +53,7 @@
                 class="item-slot"
                 :data-slot="slot"
                 :class="{ 
-                                'has-decay': getItemInSlot(slot, 'player') && getItemInSlot(slot, 'player').info.expiryDate && !isItemExpired(getItemInSlot(slot, 'player')),
+                                'has-decay': getItemInSlot(slot, 'player') && getItemInSlot(slot, 'player').info && getItemInSlot(slot, 'player').info.expiryDate && !isItemExpired(getItemInSlot(slot, 'player')),
                                 'expired-item': isItemExpired(getItemInSlot(slot, 'player')), 
                                 'invalid-slot-highlight': errorSlot === slot 
                             }"
@@ -105,7 +105,7 @@
           </div>
         </div>
         <div class="input-container">
-          <img src="assets/logo.webp" alt="Logo" class="inventory-logo" />
+          <img v-if="showLogo" src="assets/logo.webp" alt="Logo" class="inventory-logo" />
           <div
             class="blur-toggle-wrapper"
             @click="toggleBlur"
@@ -303,8 +303,7 @@
               >
                 <div class="drop-zone-content">
                   <div class="drop-zone-icon-wrapper">
-                    <i class="fas fa-box-open drop-zone-icon"></i>
-                    <div class="drop-zone-pattern"></div>
+                    <i class="fas fa-arrow-down drop-zone-icon"></i>
                   </div>
                 </div>
               </div>
@@ -315,7 +314,7 @@
                   class="item-slot"
                   :data-slot="slot"
                   :class="{ 
-      'has-decay': getItemInSlot(slot, 'other') && getItemInSlot(slot, 'other').info.expiryDate && !isItemExpired(getItemInSlot(slot, 'other')),
+      'has-decay': getItemInSlot(slot, 'other') && getItemInSlot(slot, 'other').info && getItemInSlot(slot, 'other').info.expiryDate && !isItemExpired(getItemInSlot(slot, 'other')),
       'expired-item': isItemExpired(getItemInSlot(slot, 'other'))
   }"
                   @mousedown="event => handleMouseDown(event, slot, 'other')"
@@ -449,82 +448,8 @@
         >
           Use
         </li>
-        <li @mouseover="handleGiveHover" @mouseleave="handleGiveLeave">
-          Give
-          <ul v-if="showSubmenu" class="submenu player-list-submenu">
-            <li v-if="isLoadingNearbyPlayers" class="submenu-info-item">
-              Loading...
-            </li>
-            <template
-              v-else-if="!isLoadingNearbyPlayers && nearbyPlayers.length > 0"
-            >
-              <li
-                v-for="player in nearbyPlayers"
-                :key="player.id"
-                class="player-list-item"
-                @click.stop="setActiveGiveTarget(player.id)"
-              >
-                <span>[{{ player.id }}] {{ player.name }}</span>
-                <div
-                  v-if="activeGiveTargetId === player.id"
-                  class="submenu quantity-input-submenu"
-                  @click.stop
-                >
-                  <input
-                    type="number"
-                    :max="contextMenuItem.amount"
-                    min="1"
-                    v-model.number="giveAmount"
-                    placeholder="Amount"
-                    @input="validateGiveAmount"
-                    class="quantity-input"
-                  />
-                  <button
-                    @click="giveItemToPlayer(player.id, giveAmount)"
-                    class="give-button"
-                  >
-                    Give
-                  </button>
-                </div>
-              </li>
-            </template>
-            <li
-              v-else-if="!isLoadingNearbyPlayers && nearbyPlayers.length === 0"
-              class="submenu-info-item"
-              @click.stop.prevent
-            >
-              No players nearby
-            </li>
-          </ul>
-        </li>
-        <li
-          class="player-list-item"
-          @mouseover="setActiveDropTarget(true)"
-          @mouseleave="setActiveDropTarget(false)"
-        >
-          Drop
-          <div
-            v-if="activeDropTarget"
-            class="submenu quantity-input-submenu"
-            @click.stop
-          >
-            <input
-              type="number"
-              :max="contextMenuItem.amount"
-              min="0"
-              v-model.number="dropAmount"
-              placeholder="Amount"
-              @input="validateDropAmount"
-              class="quantity-input"
-            />
-            <button
-              @click="dropItem(contextMenuItem, dropAmount)"
-              class="give-button"
-            >
-              Drop
-            </button>
-          </div>
-        </li>
+        <li @click="openGivePopup(contextMenuItem)">Give</li>
+        <li @click="openDropPopup(contextMenuItem)">Drop</li>
         <li @click="splitAndPlaceItem(contextMenuItem, 'player')">Split</li>
         <li
           v-if="contextMenuItem.name.includes('weapon_')"
@@ -539,6 +464,77 @@
           Attachments
         </li>
       </ul>
+
+      <div v-if="showGivePopup" class="popup-overlay" @click.self="closeGivePopup">
+        <div class="popup-panel">
+          <div class="popup-header">
+            <h3>Give {{ contextMenuItem && contextMenuItem.label }}</h3>
+            <button @click="closeGivePopup" class="close-panel-button">&times;</button>
+          </div>
+          <div class="popup-body">
+            <div v-if="isLoadingNearbyPlayers" class="submenu-info-item">
+              Loading...
+            </div>
+            <ul v-else-if="nearbyPlayers.length > 0" class="popup-player-list">
+              <li
+                v-for="player in nearbyPlayers"
+                :key="player.id"
+                class="popup-player-item"
+                :class="{ active: activeGiveTargetId === player.id }"
+                @click="setActiveGiveTarget(player.id)"
+              >
+                [{{ player.id }}] {{ player.name }}
+              </li>
+            </ul>
+            <div v-else class="submenu-info-item">No players nearby</div>
+            <div class="popup-actions" v-if="activeGiveTargetId !== null">
+              <input
+                type="number"
+                :max="contextMenuItem && contextMenuItem.amount"
+                min="1"
+                v-model.number="giveAmount"
+                placeholder="Amount"
+                @input="validateGiveAmount"
+                class="quantity-input"
+              />
+              <button
+                @click="giveItemToPlayer(activeGiveTargetId, giveAmount)"
+                class="give-button"
+              >
+                Give
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="showDropPopup" class="popup-overlay" @click.self="closeDropPopup">
+        <div class="popup-panel popup-panel-small">
+          <div class="popup-header">
+            <h3>Drop {{ contextMenuItem && contextMenuItem.label }}</h3>
+            <button @click="closeDropPopup" class="close-panel-button">&times;</button>
+          </div>
+          <div class="popup-body">
+            <div class="popup-actions">
+              <input
+                type="number"
+                :max="contextMenuItem && contextMenuItem.amount"
+                min="1"
+                v-model.number="dropAmount"
+                placeholder="Amount"
+                @input="validateDropAmount"
+                class="quantity-input"
+              />
+              <button
+                @click="dropItem(contextMenuItem, dropAmount)"
+                class="give-button"
+              >
+                Drop
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </body>
 </html>

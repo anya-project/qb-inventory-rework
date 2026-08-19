@@ -1,9 +1,3 @@
----------------------------
--- server/functions.lua
----------------------------
-
--- HELPER: Get dynamic max weight for a player (supports VIP inventory upgrades)
--- Reads from player metadata 'maxweight' first, falls back to Config.MaxWeight
 local function GetPlayerMaxWeight(Player)
     local mw = Player and Player.PlayerData and Player.PlayerData.metadata and Player.PlayerData.metadata['maxweight']
     if type(mw) == 'number' and mw > 0 then
@@ -60,8 +54,6 @@ local function SetupShopItems(shopItems)
     return items
 end
 
--- Exported Functions
-
 function LoadInventory(source, citizenid)
     local inventory = MySQL.prepare.await('SELECT inventory FROM players WHERE citizenid = ?', { citizenid })
     local loadedInventory = {}
@@ -108,7 +100,6 @@ end
 exports('LoadInventory', LoadInventory)
 
 function SaveInventory(source, offline)
-    -- print(('[qb-inventory] Save Inventory data for: %s (%s)'):format(GetPlayerName(source), source))
     local PlayerData
     if offline then
         PlayerData = source
@@ -591,7 +582,6 @@ function OpenInventory(source, identifier, data)
     if not inventory then
         local result = MySQL.prepare.await('SELECT * FROM inventories WHERE identifier = ?', { identifier })
         if result and result[1] then
-         --   print(('Loaded inventory [%s] from database.'):format(identifier))
             Inventories[identifier] = {
                 items = SanitizeInventory(json.decode(result[1].items)),
                 isOpen = false,
@@ -601,7 +591,6 @@ function OpenInventory(source, identifier, data)
             }
             inventory = Inventories[identifier]
         else
-         --   print(('Initializing new inventory for [%s].'):format(identifier))
             inventory = InitializeInventory(identifier, data)
         end
     end
@@ -764,11 +753,6 @@ end
 exports('AddItem', AddItem)
 
 function RemoveItem(identifier, item, amount, slot, reason)
-    -- ==================== REMOVEITEM DEBUG START ====================
-    --print('--- REMOVEITEM DEBUG: Function Called ---')
-    --print(('Attempting to remove %s of "%s" from inventory [%s], slot [%s]'):format(tostring(amount), tostring(item), tostring(identifier), tostring(slot)))
-    -- ================================================================
-
     local player = QBCore.Functions.GetPlayer(identifier)
     local inventory, inventoryType
 

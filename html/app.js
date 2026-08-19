@@ -55,7 +55,6 @@ const InventoryContainer = Vue.createApp({
         showContextMenu: false,
         contextMenuPosition: { top: "0px", left: "0px" },
         contextMenuItem: null,
-        showSubmenu: false,
         showHotbar: false,
         hotbarItems: [],
         notifications: [],
@@ -71,13 +70,12 @@ const InventoryContainer = Vue.createApp({
         ghostElement: null,
         dragStartInventoryType: "player",
         transferAmount: null,
-        showGiveSubmenu: false,
-        showSubmenu: false,
+        showGivePopup: false,
+        showDropPopup: false,
         nearbyPlayers: [],
         isLoadingNearbyPlayers: false,
         activeGiveTargetId: null,
         giveAmount: 1,
-        activeDropTarget: false,
         dropAmount: 1,
         serverTime: null,
         clientTimeOnSync: null,
@@ -85,6 +83,7 @@ const InventoryContainer = Vue.createApp({
         selectedWeaponForPanel: null,
         selectedWeaponAttachmentsForPanel: [],
         isBlurEnabled: true,
+        showLogo: true,
       };
     },
     openInventory(data) {
@@ -96,6 +95,7 @@ const InventoryContainer = Vue.createApp({
       this.isInventoryOpen = true;
       this.maxWeight = data.maxweight;
       this.totalSlots = data.slots;
+      this.showLogo = data.showLogo !== false;
       this.playerInventory = {};
       this.otherInventory = {};
 
@@ -192,8 +192,6 @@ const InventoryContainer = Vue.createApp({
       const contextMenu = this.$el.querySelector(".context-menu");
       if (contextMenu && !contextMenu.contains(event.target)) {
         this.showContextMenu = false;
-        this.showSubmenu = false;
-        this.activeDropTarget = false;
         this.activeGiveTargetId = null;
         this.dropAmount = 1;
       } else if (this.showContextMenu && event.button === 0) {
@@ -484,7 +482,7 @@ const InventoryContainer = Vue.createApp({
             this.playerInventory[draggingItem.slot].amount = remainingAmount;
           }
 
-          this.otherInventory = {}; // Reset first
+          this.otherInventory = {};
           if (dropData.inventory) {
             const otherItems = Array.isArray(dropData.inventory)
               ? dropData.inventory
@@ -551,7 +549,6 @@ const InventoryContainer = Vue.createApp({
         if (sourceItem.amount < amountToTransfer)
           throw new Error("Insufficient amount");
 
-        // --- VALIDASI BARU DIMULAI DI SINI ---
         if (targetInventoryType !== this.dragStartInventoryType) {
           const targetWeight = targetInventoryType === "player" ? this.playerWeight : this.otherInventoryWeight;
           const maxTargetWeight = targetInventoryType === "player" ? this.maxWeight : this.otherInventoryMaxWeight;
@@ -582,7 +579,6 @@ const InventoryContainer = Vue.createApp({
             throw new Error("slots");
           }
         }
-        // --- VALIDASI SELESAI ---
 
         const targetItem = targetInventory[targetSlot];
 
@@ -685,7 +681,7 @@ const InventoryContainer = Vue.createApp({
         } else if (error.message === 'slots') {
             this.sendClientNotification("No free slots.", "error");
         } else {
-            console.error("Inventory action failed:", error.message); // Fallback for other errors
+            console.error("Inventory action failed:", error.message);
         }
         this.inventoryError(this.currentlyDraggingSlot, this.dragStartInventoryType);
       } finally {
@@ -731,6 +727,7 @@ const InventoryContainer = Vue.createApp({
     async dropItem(item, quantity) {
       if (!item || !quantity || quantity <= 0) {
         this.showContextMenu = false;
+        this.showDropPopup = false;
         return;
       }
 
@@ -743,6 +740,7 @@ const InventoryContainer = Vue.createApp({
         if (amountToDrop > item.amount) {
           console.error("Attempted to drop more items than available.");
           this.showContextMenu = false;
+          this.showDropPopup = false;
           return;
         }
 
@@ -768,7 +766,7 @@ const InventoryContainer = Vue.createApp({
               amount: amountToDrop,
             });
 
-            this.otherInventory = {}; // Reset first
+            this.otherInventory = {};
             if (dropData.inventory) {
               const otherItems = Array.isArray(dropData.inventory)
                 ? dropData.inventory
@@ -792,7 +790,7 @@ const InventoryContainer = Vue.createApp({
         }
       }
       this.showContextMenu = false;
-      this.activeDropTarget = false;
+      this.showDropPopup = false;
     },
     async useItem(item) {
       if (!item || item.useable === false) {
@@ -876,10 +874,14 @@ const InventoryContainer = Vue.createApp({
         this.contextMenuItem = item;
       }
     },
-    async openGiveMenu() {
+    async openGivePopup(item) {
+      this.contextMenuItem = item;
+      this.showContextMenu = false;
+      this.showGivePopup = true;
       this.nearbyPlayers = [];
+      this.activeGiveTargetId = null;
+      this.giveAmount = 1;
       this.isLoadingNearbyPlayers = true;
-      this.showSubmenu = false;
 
       try {
         const response = await axios.post(
@@ -894,10 +896,22 @@ const InventoryContainer = Vue.createApp({
         this.nearbyPlayers = [];
       } finally {
         this.isLoadingNearbyPlayers = false;
-        this.$nextTick(() => {
-          this.showSubmenu = true;
-        });
       }
+    },
+    closeGivePopup() {
+      this.showGivePopup = false;
+      this.nearbyPlayers = [];
+      this.activeGiveTargetId = null;
+      this.isLoadingNearbyPlayers = false;
+    },
+    openDropPopup(item) {
+      this.contextMenuItem = item;
+      this.showContextMenu = false;
+      this.showDropPopup = true;
+      this.dropAmount = 1;
+    },
+    closeDropPopup() {
+      this.showDropPopup = false;
     },
     async giveItemToPlayer(targetId, amount) {
       if (!this.contextMenuItem || !amount || amount <= 0) return;
@@ -934,7 +948,7 @@ const InventoryContainer = Vue.createApp({
         console.error("Error giving item:", error);
       }
       this.showContextMenu = false;
-      this.showSubmenu = false;
+      this.showGivePopup = false;
       this.nearbyPlayers = [];
       this.activeGiveTargetId = null;
     },
@@ -1220,35 +1234,6 @@ const InventoryContainer = Vue.createApp({
           console.error("Error posting inventory data:", error);
         });
     },
-    handleGiveHover() {
-      if (this.nearbyPlayers.length === 0 && !this.isLoadingNearbyPlayers) {
-        this.isLoadingNearbyPlayers = true;
-        this.showSubmenu = true;
-
-        axios
-          .post("https://qb-inventory/GetNearbyPlayers", {})
-          .then((response) => {
-            if (response.data) {
-              this.nearbyPlayers = response.data;
-            }
-          })
-          .catch((error) => {
-            console.error("Failed to get nearby players:", error);
-            this.nearbyPlayers = [];
-          })
-          .finally(() => {
-            this.isLoadingNearbyPlayers = false;
-          });
-      } else {
-        this.showSubmenu = true;
-      }
-    },
-    handleGiveLeave() {
-      this.showSubmenu = false;
-      this.nearbyPlayers = [];
-      this.isLoadingNearbyPlayers = false;
-      this.activeGiveTargetId = null;
-    },
     setActiveGiveTarget(playerId) {
       if (this.activeGiveTargetId === playerId) {
         this.activeGiveTargetId = null;
@@ -1257,8 +1242,6 @@ const InventoryContainer = Vue.createApp({
         this.giveAmount = 1;
       }
     },
-
-    clearActiveGiveTarget() { },
 
     validateGiveAmount() {
       if (!this.contextMenuItem) return;
@@ -1269,10 +1252,6 @@ const InventoryContainer = Vue.createApp({
         this.giveAmount = 1;
       }
     },
-    setActiveDropTarget(isActive) {
-      this.activeDropTarget = isActive;
-    },
-
     validateDropAmount() {
       if (!this.contextMenuItem) return;
       if (this.dropAmount > this.contextMenuItem.amount) {
